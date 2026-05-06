@@ -50,6 +50,16 @@ if ($path === '/api/hash-ledger') {
     Json::respond($service->hashLedger(requestPayload()));
 }
 
+if ($path === '/api/command-workbench') {
+    requirePost($method);
+    Json::respond($service->commandWorkbench(requestPayload()));
+}
+
+if ($path === '/api/timeline-fusion') {
+    requirePost($method);
+    Json::respond($service->timelineFusion(requestPayload()));
+}
+
 if ($path === '/') {
     echo View::page('Android Digital Forensics Lab', renderDashboard($repository, $service));
     exit;
@@ -60,6 +70,11 @@ if ($path === '/casework') {
     exit;
 }
 
+if ($path === '/workbench') {
+    echo View::page('Workbench | Android Digital Forensics Lab', renderWorkbench($service, $method));
+    exit;
+}
+
 if ($path === '/methods') {
     echo View::page('Methods | Android Digital Forensics Lab', renderMethods($repository, $service, $method));
     exit;
@@ -67,6 +82,11 @@ if ($path === '/methods') {
 
 if ($path === '/wiping') {
     echo View::page('Wiping | Android Digital Forensics Lab', renderWiping($service, $method));
+    exit;
+}
+
+if ($path === '/timeline') {
+    echo View::page('Timeline | Android Digital Forensics Lab', renderTimeline($service, $method));
     exit;
 }
 
@@ -113,9 +133,37 @@ function renderDashboard(LabRepository $repository, ForensicsLabService $service
         $stages .= '<article class="stage-card"><span>Stage ' . $number . '</span><h3>' . View::e($stage['name']) . '</h3><p>' . View::e($stage['purpose']) . '</p></article>';
     }
 
+    $modules = '';
+    foreach ($repository->advancedModules() as $module) {
+        $modules .= '<article class="module-card"><span>' . View::e($module['mode']) . '</span><h3>' . View::e($module['name']) . '</h3><p>' . View::e($module['description']) . '</p></article>';
+    }
+
     $tools = '';
     foreach (array_slice($repository->toolProfiles(), 0, 6) as $tool) {
         $tools .= '<article class="card"><span>' . View::e($tool['category']) . '</span><h3>' . View::e($tool['name']) . '</h3><p>' . View::e($tool['use_case']) . '</p></article>';
+    }
+
+    $preview = $service->methodCompare([
+        'deleted_data_needed' => true,
+        'cloud_relevant' => true,
+        'malware_suspected' => true,
+        'memory_needed' => true,
+        'wiping_suspected' => true,
+        'court_report' => true,
+    ]);
+    $methodStack = '';
+    foreach (array_slice($preview['ranked_methods'], 0, 4) as $item) {
+        $methodStack .= '<div><strong>' . View::e($item['name']) . '</strong><span>' . View::e($item['role']) . ' - ' . View::e($item['score']) . '/100</span></div>';
+    }
+
+    $topMethod = (string) $preview['ranked_methods'][0]['name'];
+    $topMethodScore = (string) $preview['ranked_methods'][0]['score'];
+    $coverageAnchor = $preview['coverage_by_feature'][count($preview['coverage_by_feature']) - 1];
+    $anchorFeature = (string) $coverageAnchor['feature'];
+    $anchorMethod = (string) $coverageAnchor['best_method'];
+    $featureMap = '';
+    foreach (array_slice($preview['coverage_by_feature'], -5) as $feature) {
+        $featureMap .= '<div class="constellation-node"><span>' . View::e($feature['best_score']) . '</span><strong>' . View::e($feature['feature']) . '</strong><small>' . View::e($feature['best_method']) . '</small></div>';
     }
 
     $recent = $summary['recent_assessments'];
@@ -130,27 +178,49 @@ function renderDashboard(LabRepository $repository, ForensicsLabService $service
     return <<<HTML
 <section class="hero">
   <div>
-    <p class="eyebrow">Android Digital Forensics Laboratory</p>
-    <h1>Research-aligned casework for acquisition planning, anti-forensics, volatile evidence, and evidence integrity.</h1>
-    <p class="lead">A PHP 8 and MySQL platform for examiners who need defensible decisions across manual, logical, file-system, physical, cloud, memory, static, dynamic, and emulator-assisted Android workflows.</p>
+    <p class="eyebrow">Android Digital Forensics Command Lab</p>
+    <h1>A smarter forensic workbench for evidence decisions that need speed, depth, and defensibility.</h1>
+    <p class="lead">Plan acquisitions, model stealth and wiping scenarios, fuse timelines, rank methods, preserve integrity roots, and turn Android evidence into a professional case narrative.</p>
     <div class="hero-actions">
+      <a class="button-link" href="/workbench">Open Workbench</a>
       <a class="button-link" href="/casework">Run Case Assessment</a>
-      <a class="secondary-link" href="/methods">Compare Methods</a>
+      <a class="secondary-link" href="/timeline">Fuse Timeline</a>
     </div>
   </div>
   <aside class="hero-aside">
-    <span>Research base</span>
-    <strong>{$metrics['research_sources']} sources</strong>
-    <p>Android acquisition, method comparison, stealth attack detection, wiping applications, and lab operations.</p>
+    <span>Scenario preview</span>
+    <strong>{$metrics['advanced_modules']} engines</strong>
+    <p>Command workbench, timeline fusion, evidence constellation, wiping lens, memory lane, and integrity ledger.</p>
   </aside>
+</section>
+
+<section class="command-strip">
+  <article><span>Lead method</span><strong>{$topMethod}</strong><p>{$topMethodScore}/100 for a high-risk stealth and wiping case.</p></article>
+  <article><span>Coverage anchor</span><strong>{$anchorFeature}</strong><p>{$anchorMethod} provides the strongest signal.</p></article>
+  <article><span>Decision model</span><strong>Layered</strong><p>Preserve, acquire, reverse, recover, correlate, and report with confidence labels.</p></article>
 </section>
 
 <section class="metric-grid">
   <article><span>Methods</span><strong>{$metrics['acquisition_methods']}</strong><p>Acquisition and analysis paths ranked by case context.</p></article>
   <article><span>Evidence Features</span><strong>{$metrics['evidence_features']}</strong><p>Recovered data families mapped to coverage and gaps.</p></article>
   <article><span>Controls</span><strong>{$metrics['forensic_controls']}</strong><p>Governance, integrity, anti-forensics, and reporting controls.</p></article>
-  <article><span>Tool Profiles</span><strong>{$metrics['tool_profiles']}</strong><p>Commercial, open-source, reverse engineering, and integrity tooling.</p></article>
+  <article><span>Advanced Engines</span><strong>{$metrics['advanced_modules']}</strong><p>Scenario intelligence, timeline fusion, and evidence assurance.</p></article>
 </section>
+
+<section class="section-head"><h2>Command Intelligence</h2><a href="/workbench">Build a scenario</a></section>
+<section class="workbench-preview">
+  <div class="panel stack-panel">
+    <h2>Method Stack</h2>
+    <div class="rank-list">{$methodStack}</div>
+  </div>
+  <div class="panel constellation-panel">
+    <h2>Evidence Constellation</h2>
+    <div class="constellation-grid">{$featureMap}</div>
+  </div>
+</section>
+
+<section class="section-head"><h2>Advanced Modules</h2><a href="/timeline">Timeline fusion</a></section>
+<div class="module-grid">{$modules}</div>
 
 <section class="section-head"><h2>Lab Workflow</h2><a href="/casework">Assess readiness</a></section>
 <div class="stage-grid">{$stages}</div>
@@ -273,6 +343,118 @@ HTML;
     </fieldset>
     {$controls}
     <button type="submit">Calculate Readiness</button>
+  </form>
+</section>
+{$resultHtml}
+HTML;
+}
+
+function renderWorkbench(ForensicsLabService $service, string $method): string
+{
+    $result = null;
+    $notice = '';
+    if ($method === 'POST') {
+        if (!Csrf::validate($_POST['_csrf'] ?? null)) {
+            $notice = '<div class="notice">The workbench scenario could not be submitted because the session token expired.</div>';
+        } else {
+            $result = $service->commandWorkbench($_POST);
+        }
+    }
+
+    $resultHtml = '<section class="panel workbench-empty"><h2>Scenario Intelligence Model</h2><p>Submit a scenario to generate a mission profile, acquisition stack, operational lanes, evidence constellation, decision cards, and validation backlog.</p></section>';
+    if ($result !== null) {
+        $stack = '';
+        foreach ($result['priority_stack'] as $item) {
+            $stack .= '<article class="card method-card"><span>#' . View::e($item['rank']) . ' - ' . View::e($item['role']) . ' - ' . View::e($item['score']) . '/100</span><h3>' . View::e($item['name']) . '</h3><p>' . View::e($item['why']) . '</p></article>';
+        }
+
+        $lanes = '';
+        foreach ($result['operational_lanes'] as $lane) {
+            $lanes .= '<article class="lane-card"><span>' . View::e($lane['tempo']) . '</span><h3>' . View::e($lane['lane']) . '</h3><p>' . View::e($lane['objective']) . '</p></article>';
+        }
+
+        $constellation = '';
+        foreach ($result['evidence_constellation'] as $feature) {
+            $constellation .= '<article class="constellation-node detail-node"><span>' . View::e($feature['criticality']) . '</span><strong>' . View::e($feature['name']) . '</strong><small>' . View::e($feature['role']) . '</small><p>' . View::e($feature['validation']) . '</p></article>';
+        }
+
+        $cards = '';
+        foreach ($result['decision_cards'] as $card) {
+            $cards .= '<article class="decision-card"><span>' . View::e($card['title']) . '</span><p>' . View::e($card['body']) . '</p></article>';
+        }
+
+        $backlog = '';
+        foreach ($result['validation_backlog'] as $item) {
+            $backlog .= '<li>' . View::e($item) . '</li>';
+        }
+
+        $mission = View::e($result['mission_profile']);
+        $urgency = View::e($result['urgency_score']);
+        $tier = View::e($result['urgency_tier']);
+        $brief = View::e($result['analyst_brief']);
+
+        $resultHtml = <<<HTML
+<section class="panel result-panel">
+  <div class="result-score">
+    <span>Urgency</span>
+    <strong>{$urgency}</strong>
+    <p>{$tier} operational tempo</p>
+  </div>
+  <div>
+    <h2>{$mission}</h2>
+    <p>{$brief}</p>
+  </div>
+  <div>
+    <h2>Validation Backlog</h2>
+    <ol class="recommendation-list">{$backlog}</ol>
+  </div>
+</section>
+<section class="section-head"><h2>Priority Stack</h2><span>Ranked methods</span></section>
+<div class="card-grid">{$stack}</div>
+<section class="section-head"><h2>Operational Lanes</h2><span>Case execution model</span></section>
+<div class="lane-grid">{$lanes}</div>
+<section class="section-head"><h2>Evidence Constellation</h2><span>Feature roles and validations</span></section>
+<div class="constellation-detail">{$constellation}</div>
+<section class="section-head"><h2>Decision Cards</h2><span>Examiner brief</span></section>
+<div class="decision-grid">{$cards}</div>
+HTML;
+    }
+
+    $csrf = Csrf::token();
+
+    return <<<HTML
+<section class="panel form-panel command-form">
+  <p class="eyebrow">Command Workbench</p>
+  <h1>Turn case signals into an operational forensic mission plan.</h1>
+  {$notice}
+  <form method="post" action="/workbench">
+    <input type="hidden" name="_csrf" value="{$csrf}">
+    <div class="form-grid">
+      <label>Scenario name<input name="scenario_name" placeholder="Locked Android wiping and stealth review"></label>
+      <label>Device model<input name="device_model" placeholder="Pixel, Samsung Galaxy, OnePlus"></label>
+      <label>Android version<input name="android_version" placeholder="Android 15"></label>
+    </div>
+    <div class="toggle-row">
+      <label><input type="checkbox" name="locked_device" value="1" checked> Locked device</label>
+      <label><input type="checkbox" name="unlock_available" value="1"> Unlock available</label>
+      <label><input type="checkbox" name="deleted_data_needed" value="1" checked> Deleted data needed</label>
+      <label><input type="checkbox" name="cloud_relevant" value="1" checked> Cloud relevant</label>
+      <label><input type="checkbox" name="malware_suspected" value="1" checked> Malware suspected</label>
+      <label><input type="checkbox" name="memory_needed" value="1" checked> Memory needed</label>
+      <label><input type="checkbox" name="wiping_suspected" value="1" checked> Wiping suspected</label>
+      <label><input type="checkbox" name="active_network" value="1" checked> Active network risk</label>
+      <label><input type="checkbox" name="time_sensitive" value="1" checked> Time-sensitive evidence</label>
+      <label><input type="checkbox" name="native_libraries_present" value="1" checked> Native libraries present</label>
+      <label><input type="checkbox" name="anti_emulator_indicators" value="1"> Anti-emulator indicators</label>
+      <label><input type="checkbox" name="root_possible" value="1"> Root possible</label>
+      <label><input type="checkbox" name="cloud_tokens_present" value="1" checked> Cloud tokens present</label>
+      <label><input type="checkbox" name="e2ee_apps_present" value="1" checked> E2EE apps present</label>
+      <label><input type="checkbox" name="external_storage_present" value="1"> External storage present</label>
+      <label><input type="checkbox" name="recent_user_activity" value="1" checked> Recent user activity</label>
+      <label><input type="checkbox" name="court_report" value="1" checked> Formal report</label>
+      <label><input type="checkbox" name="privacy_sensitive" value="1" checked> Sensitive data present</label>
+    </div>
+    <button type="submit">Generate Mission Plan</button>
   </form>
 </section>
 {$resultHtml}
@@ -421,6 +603,137 @@ HTML;
 HTML;
 }
 
+function renderTimeline(ForensicsLabService $service, string $method): string
+{
+    $result = null;
+    $notice = '';
+    if ($method === 'POST') {
+        if (!Csrf::validate($_POST['_csrf'] ?? null)) {
+            $notice = '<div class="notice">The timeline fusion could not be submitted because the session token expired.</div>';
+        } else {
+            $result = $service->timelineFusion([
+                'case_name' => $_POST['case_name'] ?? '',
+                'events' => $_POST['events'] ?? '',
+            ]);
+        }
+    }
+
+    $sample = View::e(json_encode([
+        [
+            'timestamp' => '2026-05-06T08:11:00+04:00',
+            'source' => 'Device OS',
+            'artifact' => 'Package manager',
+            'description' => 'File-wiping application launch recorded.',
+            'confidence' => 'High',
+            'hash' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ],
+        [
+            'timestamp' => '2026-05-06T08:14:02+04:00',
+            'source' => 'Filesystem',
+            'artifact' => 'Media store',
+            'description' => 'Residual thumbnail and metadata entry remained after deletion.',
+            'confidence' => 'High',
+            'hash' => 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        ],
+        [
+            'timestamp' => '2026-05-06T08:21:49+04:00',
+            'source' => 'Network',
+            'artifact' => 'Runtime capture',
+            'description' => 'Application contacted telemetry endpoint after wiping workflow.',
+            'confidence' => 'Medium',
+            'hash' => 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        ],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+    $resultHtml = '<section class="panel workbench-empty"><h2>Timeline Fusion Model</h2><p>Submit mixed-source Android events to normalize timestamps, cluster activity, expose anomalies, and produce reconstruction steps.</p></section>';
+    if ($result !== null) {
+        $clusters = '';
+        foreach ($result['clusters'] as $cluster) {
+            $clusters .= '<article class="card"><span>' . View::e($cluster['events']) . ' events</span><h3>' . View::e($cluster['window']) . '</h3><p>' . View::e(implode(', ', $cluster['sources'])) . '</p><small>Highest confidence: ' . View::e($cluster['highest_confidence']) . '</small></article>';
+        }
+
+        $anchors = '';
+        foreach ($result['anchors'] as $anchor) {
+            $anchors .= '<tr><td>' . View::e($anchor['timestamp']) . '</td><td>' . View::e($anchor['source']) . '</td><td>' . View::e($anchor['artifact']) . '</td><td>' . View::e($anchor['description']) . '</td></tr>';
+        }
+
+        $anomalies = '';
+        foreach ($result['anomalies'] as $anomaly) {
+            $anomalies .= '<li>' . View::e($anomaly) . '</li>';
+        }
+        if ($anomalies === '') {
+            $anomalies = '<li>No major timeline anomalies detected.</li>';
+        }
+
+        $steps = '';
+        foreach ($result['reconstruction_steps'] as $step) {
+            $steps .= '<li>' . View::e($step) . '</li>';
+        }
+
+        $sourceBars = '';
+        foreach ($result['source_map'] as $source => $count) {
+            $width = min(100, max(18, $count * 24));
+            $sourceBars .= '<div class="source-bar"><span>' . View::e($source) . '</span><strong style="width: ' . $width . '%">' . View::e($count) . '</strong></div>';
+        }
+
+        $confidence = View::e($result['confidence_score']);
+        $tier = View::e($result['confidence_tier']);
+        $eventCount = View::e($result['event_count']);
+        $sourceCount = View::e($result['source_count']);
+
+        $resultHtml = <<<HTML
+<section class="panel result-panel">
+  <div class="result-score">
+    <span>Confidence</span>
+    <strong>{$confidence}</strong>
+    <p>{$tier} reconstruction confidence</p>
+  </div>
+  <div>
+    <h2>{$eventCount} Events</h2>
+    <p>Normalized into clustered activity windows and source families.</p>
+    <div class="source-bars">{$sourceBars}</div>
+  </div>
+  <div>
+    <h2>{$sourceCount} Sources</h2>
+    <ol class="recommendation-list">{$steps}</ol>
+  </div>
+</section>
+<section class="section-head"><h2>Activity Clusters</h2><span>Time windows</span></section>
+<div class="card-grid">{$clusters}</div>
+<section class="panel">
+  <h2>High-Confidence Anchors</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Timestamp</th><th>Source</th><th>Artifact</th><th>Description</th></tr></thead>
+      <tbody>{$anchors}</tbody>
+    </table>
+  </div>
+</section>
+<section class="panel">
+  <h2>Anomaly Notes</h2>
+  <ol class="recommendation-list">{$anomalies}</ol>
+</section>
+HTML;
+    }
+
+    $csrf = Csrf::token();
+
+    return <<<HTML
+<section class="panel form-panel">
+  <p class="eyebrow">Timeline Fusion</p>
+  <h1>Normalize Android events into a confidence-scored reconstruction.</h1>
+  {$notice}
+  <form method="post" action="/timeline">
+    <input type="hidden" name="_csrf" value="{$csrf}">
+    <label>Case name<input name="case_name" placeholder="Android wiping and activity timeline"></label>
+    <label>Events JSON<textarea name="events" rows="14">{$sample}</textarea></label>
+    <button type="submit">Fuse Timeline</button>
+  </form>
+</section>
+{$resultHtml}
+HTML;
+}
+
 function renderLedger(ForensicsLabService $service, string $method): string
 {
     $result = null;
@@ -504,4 +817,3 @@ function renderResearch(LabRepository $repository): string
 <div class="card-grid">{$features}</div>
 HTML;
 }
-

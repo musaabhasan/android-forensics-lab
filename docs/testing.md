@@ -15,6 +15,8 @@ The tests verify:
 
 - PHP syntax across source, public, config, and test scripts.
 - Catalog counts and expected research source identifiers.
+- Command workbench mission profiling, urgency scoring, method stack, operational lanes, and evidence constellation.
+- Timeline fusion event normalization, source mapping, clustering, anchors, anomaly detection, and confidence scoring.
 - Control and method scoring behavior.
 - Strong case readiness with complete controls.
 - High-risk case behavior when controls are missing.
@@ -32,4 +34,3 @@ The tests verify:
 - Confirm API routes return JSON.
 - Confirm no stack traces appear when the database is not configured.
 - Confirm production `.env` values are not committed.
-

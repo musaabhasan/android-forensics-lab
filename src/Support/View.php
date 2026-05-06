@@ -29,8 +29,10 @@ final class View
     <a class="brand" href="/">Android Forensics Lab</a>
     <nav>
       <a href="/casework">Casework</a>
+      <a href="/workbench">Workbench</a>
       <a href="/methods">Methods</a>
       <a href="/wiping">Wiping</a>
+      <a href="/timeline">Timeline</a>
       <a href="/ledger">Ledger</a>
       <a href="/research">Research</a>
     </nav>
@@ -45,4 +47,3 @@ final class View
 HTML;
     }
 }
-

@@ -70,6 +70,14 @@ return [
         ['id' => 'correlation-reporting', 'name' => 'Correlation and Reporting', 'purpose' => 'Correlate recovered features across tools, timelines, apps, cloud records, and malware indicators with confidence labels.'],
         ['id' => 'review-retention', 'name' => 'Review and Retention', 'purpose' => 'Apply peer review, privacy minimization, evidence retention, audit logging, and reproducible appendix controls.'],
     ],
+    'advanced_modules' => [
+        ['id' => 'command-workbench', 'name' => 'Command Workbench', 'mode' => 'Scenario planning', 'description' => 'Converts case signals into an operational lane plan, method sequence, validation backlog, and examiner brief.'],
+        ['id' => 'timeline-fusion', 'name' => 'Timeline Fusion', 'mode' => 'Correlation', 'description' => 'Normalizes mixed-source events, clusters them, highlights gaps, and produces reconstruction steps.'],
+        ['id' => 'evidence-constellation', 'name' => 'Evidence Constellation', 'mode' => 'Coverage intelligence', 'description' => 'Maps evidence features to roles such as anchor, volatile, recovery, external, and corroboration nodes.'],
+        ['id' => 'wiping-claim-lens', 'name' => 'Wiping Claim Lens', 'mode' => 'Anti-forensics', 'description' => 'Separates content recovery, metadata recovery, implementation behavior, and residual execution traces.'],
+        ['id' => 'memory-stealth-lane', 'name' => 'Memory Stealth Lane', 'mode' => 'Volatile evidence', 'description' => 'Prioritizes native code, process memory, anti-analysis signals, emulator constraints, and root feasibility.'],
+        ['id' => 'integrity-root-ledger', 'name' => 'Integrity Root Ledger', 'mode' => 'Evidence assurance', 'description' => 'Creates deterministic manifest roots for custody checkpoints and report appendices.'],
+    ],
     'evidence_features' => [
         ['id' => 'device-identity', 'name' => 'Device Identity', 'category' => 'System', 'weight' => 7, 'description' => 'Device model, Android build, serials, accounts, carrier, SIM, and lock state.'],
         ['id' => 'installed-apps', 'name' => 'Installed Applications', 'category' => 'Application', 'weight' => 8, 'description' => 'Package inventory, install sources, permissions, signing certificates, app versions, and suspicious packages.'],
@@ -319,4 +327,3 @@ return [
         'Limitations, confidence, and recommended next steps',
     ],
 ];
-

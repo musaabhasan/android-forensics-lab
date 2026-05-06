@@ -46,6 +46,14 @@ final class LabRepository
     /**
      * @return array<int, array<string, mixed>>
      */
+    public function advancedModules(): array
+    {
+        return $this->catalog['advanced_modules'];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function evidenceFeatures(): array
     {
         return $this->catalog['evidence_features'];
@@ -247,6 +255,83 @@ final class LabRepository
     }
 
     /**
+     * @param array<string, mixed> $workbench
+     */
+    public function saveWorkbenchRun(array $workbench): ?string
+    {
+        if ($this->pdo === null) {
+            return null;
+        }
+
+        $id = Uuid::v4();
+
+        try {
+            $statement = $this->pdo->prepare(
+                'INSERT INTO workbench_runs (
+                    id, scenario_name, mission_profile, urgency_score,
+                    lead_method, result_payload, created_at
+                ) VALUES (
+                    :id, :scenario_name, :mission_profile, :urgency_score,
+                    :lead_method, :result_payload, NOW()
+                )'
+            );
+            $statement->execute([
+                'id' => $id,
+                'scenario_name' => (string) $workbench['scenario_name'],
+                'mission_profile' => (string) $workbench['mission_profile'],
+                'urgency_score' => (int) $workbench['urgency_score'],
+                'lead_method' => (string) ($workbench['priority_stack'][0]['name'] ?? 'Not ranked'),
+                'result_payload' => json_encode($workbench, JSON_THROW_ON_ERROR),
+            ]);
+
+            $this->audit('workbench_run.created', ['workbench_id' => $id, 'urgency_score' => $workbench['urgency_score']]);
+
+            return $id;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $timeline
+     */
+    public function saveTimelineFusion(array $timeline): ?string
+    {
+        if ($this->pdo === null) {
+            return null;
+        }
+
+        $id = Uuid::v4();
+
+        try {
+            $statement = $this->pdo->prepare(
+                'INSERT INTO timeline_fusions (
+                    id, case_name, event_count, source_count, anomaly_count,
+                    confidence_score, result_payload, created_at
+                ) VALUES (
+                    :id, :case_name, :event_count, :source_count, :anomaly_count,
+                    :confidence_score, :result_payload, NOW()
+                )'
+            );
+            $statement->execute([
+                'id' => $id,
+                'case_name' => (string) $timeline['case_name'],
+                'event_count' => (int) $timeline['event_count'],
+                'source_count' => (int) $timeline['source_count'],
+                'anomaly_count' => count($timeline['anomalies']),
+                'confidence_score' => (int) $timeline['confidence_score'],
+                'result_payload' => json_encode($timeline, JSON_THROW_ON_ERROR),
+            ]);
+
+            $this->audit('timeline_fusion.created', ['timeline_id' => $id, 'event_count' => $timeline['event_count']]);
+
+            return $id;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function recentCaseAssessments(int $limit = 5): array
@@ -294,4 +379,3 @@ final class LabRepository
         }
     }
 }
-

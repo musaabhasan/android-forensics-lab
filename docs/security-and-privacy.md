@@ -9,6 +9,7 @@ The platform is designed for forensic lab environments where integrity, privacy,
 - Forms use CSRF tokens.
 - Database access uses PDO prepared statements.
 - JSON APIs validate method type and normalize submitted identifiers.
+- Timeline and manifest inputs are normalized before analysis and should be linked to separately preserved evidence files.
 - Public routes avoid exposing configuration values or raw environment data.
 
 ## Evidence Integrity
@@ -41,4 +42,3 @@ The platform is designed for forensic lab environments where integrity, privacy,
 ## Forensic Boundary
 
 This platform supports documentation, planning, scoring, and defensibility. It does not replace validated forensic tools, examiner judgment, legal authority, or jurisdiction-specific procedures.
-

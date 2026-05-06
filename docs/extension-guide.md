@@ -29,7 +29,15 @@ The platform is built to be extended by adding structured catalog entries and se
 The result arrays are already suitable for PDF or document generation. A reporting module can consume:
 
 - `assessCase()` for case readiness and report outline
+- `commandWorkbench()` for scenario mission plans, operational lanes, evidence constellation, and validation backlog
 - `methodCompare()` for acquisition rationale
+- `timelineFusion()` for event reconstruction, anchors, anomalies, and confidence scoring
 - `wipingEvaluation()` for anti-forensics findings
 - `hashLedger()` for evidence manifest integrity
 
+## Add a Timeline Source
+
+1. Normalize the source into events containing `timestamp`, `source`, `artifact`, `description`, `confidence`, and optional `hash`.
+2. Keep parser-specific fields outside the core event object unless they are needed for reporting.
+3. Add source-specific anomaly checks only when the source has reliable timestamp or artifact semantics.
+4. Add tests that confirm ordering, confidence, source count, and anomaly behavior.

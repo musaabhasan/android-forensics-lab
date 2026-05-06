@@ -7,11 +7,13 @@ The lab is designed for examiners, researchers, and cybersecurity teams who need
 ## Core Capabilities
 
 - Case readiness scoring across governance, acquisition, evidence integrity, malware, memory, anti-forensics, privacy, and reporting controls.
+- Command workbench that converts scenario signals into a mission profile, urgency tier, operational lanes, priority method stack, evidence constellation, and validation backlog.
 - Context-aware method comparison for manual inspection, logical acquisition, file-system acquisition, physical imaging, cloud acquisition, memory acquisition, emulator dynamic analysis, static APK review, and dynamic application review.
+- Timeline fusion engine for mixed-source Android events, activity clustering, anomaly detection, confidence scoring, anchors, and reconstruction steps.
 - File-wiping evaluation workflow based on declared claims, implementation evidence, standards alignment, recoverability, execution traces, app artifacts, OS artifacts, and timeline consistency.
 - Merkle-style SHA-256 evidence ledger for deterministic manifest integrity checkpoints.
 - Research-source catalog with explicit alignment from Android forensic literature, stealth-attack detection work, method comparison research, file-wiping evaluation, and practical lab operations.
-- MySQL schema for research sources, methods, evidence features, tool profiles, controls, case assessments, wiping evaluations, custody events, ledger runs, and audit events.
+- MySQL schema for research sources, methods, evidence features, tool profiles, controls, case assessments, workbench runs, timeline fusions, wiping evaluations, custody events, ledger runs, and audit events.
 
 ## Research Foundation
 
@@ -27,8 +29,10 @@ This project is informed by the following works:
 
 - `/` - dashboard and workflow overview
 - `/casework` - forensic readiness assessment
+- `/workbench` - scenario command workbench
 - `/methods` - acquisition and analysis method comparison
 - `/wiping` - Android file-wiping evidence evaluation
+- `/timeline` - timeline fusion and reconstruction
 - `/ledger` - evidence manifest ledger root
 - `/research` - research alignment and evidence feature model
 - `/health` - service health check
@@ -38,7 +42,9 @@ This project is informed by the following works:
 ```http
 GET /api/summary
 POST /api/assess
+POST /api/command-workbench
 POST /api/method-compare
+POST /api/timeline-fusion
 POST /api/wiping-evaluation
 POST /api/hash-ledger
 ```
@@ -69,6 +75,21 @@ Example evidence ledger request:
 }
 ```
 
+Example command workbench request:
+
+```json
+{
+  "scenario_name": "Locked Android wiping and stealth review",
+  "locked_device": true,
+  "deleted_data_needed": true,
+  "malware_suspected": true,
+  "memory_needed": true,
+  "wiping_suspected": true,
+  "active_network": true,
+  "time_sensitive": true
+}
+```
+
 ## Local Run
 
 With PHP installed:
@@ -96,7 +117,7 @@ php bin/lint.php
 php bin/test.php
 ```
 
-The test suite validates catalog integrity, scoring behavior, method ranking, file-wiping classification, deterministic hash-ledger behavior, database migrations, seed data, and public-facing text hygiene.
+The test suite validates catalog integrity, command workbench behavior, timeline fusion, scoring behavior, method ranking, file-wiping classification, deterministic hash-ledger behavior, database migrations, seed data, and public-facing text hygiene.
 
 ## Documentation
 
@@ -106,4 +127,3 @@ The test suite validates catalog integrity, scoring behavior, method ranking, fi
 - [Database Model](docs/database.md)
 - [Testing](docs/testing.md)
 - [Extension Guide](docs/extension-guide.md)
-

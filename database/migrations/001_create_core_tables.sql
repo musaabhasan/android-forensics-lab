@@ -86,6 +86,31 @@ CREATE TABLE IF NOT EXISTS hash_ledger_runs (
     INDEX idx_hash_ledger_runs_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS workbench_runs (
+    id CHAR(36) PRIMARY KEY,
+    scenario_name VARCHAR(180) NOT NULL,
+    mission_profile VARCHAR(180) NOT NULL,
+    urgency_score INT NOT NULL,
+    lead_method VARCHAR(160) NOT NULL,
+    result_payload JSON NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_workbench_runs_created_at (created_at),
+    INDEX idx_workbench_runs_urgency_score (urgency_score)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS timeline_fusions (
+    id CHAR(36) PRIMARY KEY,
+    case_name VARCHAR(180) NOT NULL,
+    event_count INT NOT NULL,
+    source_count INT NOT NULL,
+    anomaly_count INT NOT NULL,
+    confidence_score INT NOT NULL,
+    result_payload JSON NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_timeline_fusions_created_at (created_at),
+    INDEX idx_timeline_fusions_confidence_score (confidence_score)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS chain_of_custody_events (
     id CHAR(36) PRIMARY KEY,
     evidence_id VARCHAR(120) NOT NULL,
@@ -108,4 +133,3 @@ CREATE TABLE IF NOT EXISTS audit_events (
     INDEX idx_audit_events_created_at (created_at),
     INDEX idx_audit_events_event_name (event_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-

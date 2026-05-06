@@ -26,3 +26,6 @@ Bhardwaj and Kaushik provide broad practical guidance for lab setup, evidence ha
 
 No single Android forensic method or tool is treated as complete. The platform encourages layered acquisition, independent validation, transparent limitations, and clear confidence labeling.
 
+## Advanced Workbench Translation
+
+The command workbench and timeline fusion modules extend that principle into practical decision support. Scenario signals are converted into a mission profile, urgency tier, method stack, operational lanes, and validation backlog. Timeline events are converted into anchors, clusters, anomalies, and reconstruction steps so the examiner can move from raw activity records to a defensible narrative without losing source-specific limitations.

@@ -13,6 +13,8 @@ The MySQL schema is intentionally explicit so the platform can be extended witho
 ## Operational Tables
 
 - `case_assessments`: submitted case context, selected controls, selected methods, score, readiness, and full result payload.
+- `workbench_runs`: scenario name, mission profile, urgency score, lead method, and full command workbench payload.
+- `timeline_fusions`: case name, event count, source count, anomaly count, confidence score, and full timeline reconstruction payload.
 - `wiping_evaluations`: application name, classification, risk score, standards status, recoverability status, and full result payload.
 - `hash_ledger_runs`: case name, manifest count, Merkle-style root, and full result payload.
 - `chain_of_custody_events`: custody timeline with chained event-hash fields.
@@ -24,4 +26,3 @@ The MySQL schema is intentionally explicit so the platform can be extended witho
 - Add method scores for every evidence family when a new acquisition method is introduced.
 - Keep JSON result payloads for reproducibility while maintaining indexed summary columns for dashboards and reporting.
 - Store uploaded evidence outside the web root and link it by evidence identifier rather than raw file path.
-

@@ -35,6 +35,7 @@ final class ForensicsLabService
             'metrics' => [
                 'research_sources' => count($this->repository->researchSources()),
                 'workflow_stages' => count($this->repository->workflowStages()),
+                'advanced_modules' => count($this->repository->advancedModules()),
                 'evidence_features' => count($this->repository->evidenceFeatures()),
                 'acquisition_methods' => count($this->repository->acquisitionMethods()),
                 'tool_profiles' => count($this->repository->toolProfiles()),
@@ -255,6 +256,93 @@ final class ForensicsLabService
         return $result;
     }
 
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function commandWorkbench(array $input): array
+    {
+        $context = $this->context($input);
+        $signals = $this->workbenchSignals($input, $context);
+        $methodPlan = $this->methodCompare(array_merge($context, [
+            'deleted_data_needed' => $signals['deleted_data_needed'],
+            'cloud_relevant' => $signals['cloud_relevant'],
+            'malware_suspected' => $signals['malware_suspected'],
+            'memory_needed' => $signals['memory_needed'],
+            'wiping_suspected' => $signals['wiping_suspected'],
+            'selected_features' => array_keys($this->repository->featuresById()),
+        ]));
+
+        $priorityStack = [];
+        foreach (array_slice($methodPlan['ranked_methods'], 0, 5) as $rank => $method) {
+            $priorityStack[] = [
+                'rank' => $rank + 1,
+                'id' => $method['id'],
+                'name' => $method['name'],
+                'role' => $method['role'],
+                'score' => $method['score'],
+                'why' => $this->methodWhy((string) $method['id'], $signals),
+            ];
+        }
+
+        $urgencyScore = $this->urgencyScore($signals);
+        $missionProfile = $this->missionProfile($signals);
+        $result = [
+            'scenario_name' => $this->cleanText($input['scenario_name'] ?? 'Advanced Android investigation'),
+            'mission_profile' => $missionProfile,
+            'urgency_score' => $urgencyScore,
+            'urgency_tier' => $this->tierFromScore($urgencyScore),
+            'signals' => $signals,
+            'priority_stack' => $priorityStack,
+            'operational_lanes' => $this->operationalLanes($signals),
+            'evidence_constellation' => $this->evidenceConstellation($signals),
+            'decision_cards' => $this->decisionCards($signals, $priorityStack),
+            'validation_backlog' => $this->validationBacklog($signals),
+            'analyst_brief' => $this->analystBrief($missionProfile, $urgencyScore, $priorityStack),
+        ];
+
+        $workbenchId = $this->repository->saveWorkbenchRun($result);
+        if ($workbenchId !== null) {
+            $result['workbench_id'] = $workbenchId;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function timelineFusion(array $input): array
+    {
+        $caseName = $this->cleanText($input['case_name'] ?? 'Android timeline fusion');
+        $events = $this->normalizeTimelineEvents($input['events'] ?? $this->sampleTimelineEvents());
+        $anomalies = $this->timelineAnomalies($events);
+        $sourceMap = $this->sourceMap($events);
+        $confidenceScore = $this->timelineConfidence($events, $anomalies);
+
+        $result = [
+            'case_name' => $caseName,
+            'event_count' => count($events),
+            'source_count' => count($sourceMap),
+            'confidence_score' => $confidenceScore,
+            'confidence_tier' => $this->confidenceTier($confidenceScore),
+            'events' => $events,
+            'source_map' => $sourceMap,
+            'clusters' => $this->timelineClusters($events),
+            'anchors' => $this->timelineAnchors($events),
+            'anomalies' => $anomalies,
+            'reconstruction_steps' => $this->reconstructionSteps($events, $anomalies),
+        ];
+
+        $timelineId = $this->repository->saveTimelineFusion($result);
+        if ($timelineId !== null) {
+            $result['timeline_id'] = $timelineId;
+        }
+
+        return $result;
+    }
+
     private function maximumScore(): int
     {
         return array_sum(array_map(
@@ -299,6 +387,309 @@ final class ForensicsLabService
         }
 
         return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @param array<string, mixed> $context
+     * @return array<string, bool>
+     */
+    private function workbenchSignals(array $input, array $context): array
+    {
+        return [
+            'locked_device' => $context['locked_device'],
+            'unlock_available' => $this->bool($input['unlock_available'] ?? false),
+            'deleted_data_needed' => $context['deleted_data_needed'],
+            'cloud_relevant' => $context['cloud_relevant'],
+            'malware_suspected' => $context['malware_suspected'],
+            'memory_needed' => $context['memory_needed'],
+            'wiping_suspected' => $context['wiping_suspected'],
+            'privacy_sensitive' => $context['privacy_sensitive'],
+            'court_report' => $context['court_report'],
+            'active_network' => $this->bool($input['active_network'] ?? true),
+            'time_sensitive' => $this->bool($input['time_sensitive'] ?? true),
+            'native_libraries_present' => $this->bool($input['native_libraries_present'] ?? true),
+            'anti_emulator_indicators' => $this->bool($input['anti_emulator_indicators'] ?? false),
+            'root_possible' => $this->bool($input['root_possible'] ?? false),
+            'cloud_tokens_present' => $this->bool($input['cloud_tokens_present'] ?? true),
+            'e2ee_apps_present' => $this->bool($input['e2ee_apps_present'] ?? true),
+            'external_storage_present' => $this->bool($input['external_storage_present'] ?? false),
+            'recent_user_activity' => $this->bool($input['recent_user_activity'] ?? true),
+        ];
+    }
+
+    /**
+     * @param array<string, bool> $signals
+     */
+    private function urgencyScore(array $signals): int
+    {
+        $score = 18;
+        $score += $signals['time_sensitive'] ? 16 : 0;
+        $score += $signals['active_network'] ? 12 : 0;
+        $score += $signals['wiping_suspected'] ? 16 : 0;
+        $score += $signals['malware_suspected'] ? 13 : 0;
+        $score += $signals['memory_needed'] ? 12 : 0;
+        $score += $signals['locked_device'] && !$signals['unlock_available'] ? 9 : 0;
+        $score += $signals['recent_user_activity'] ? 6 : 0;
+        $score += $signals['court_report'] ? 5 : 0;
+
+        return max(0, min(100, $score));
+    }
+
+    /**
+     * @param array<string, bool> $signals
+     */
+    private function missionProfile(array $signals): string
+    {
+        if ($signals['memory_needed'] && $signals['malware_suspected']) {
+            return 'Volatile-first stealth investigation';
+        }
+        if ($signals['wiping_suspected'] && $signals['deleted_data_needed']) {
+            return 'Anti-forensics recovery investigation';
+        }
+        if ($signals['locked_device'] && $signals['cloud_relevant']) {
+            return 'Cloud-assisted locked-device investigation';
+        }
+        if ($signals['e2ee_apps_present'] && $signals['recent_user_activity']) {
+            return 'Application correlation and live-state preservation';
+        }
+
+        return 'Layered Android evidence reconstruction';
+    }
+
+    /**
+     * @param array<string, bool> $signals
+     * @return array<int, array<string, mixed>>
+     */
+    private function operationalLanes(array $signals): array
+    {
+        return [
+            [
+                'lane' => 'Preserve',
+                'tempo' => $signals['time_sensitive'] || $signals['active_network'] ? 'Immediate' : 'Standard',
+                'objective' => 'Stabilize power, radios, lock state, cloud sync, screen state, and external media before evidence drift.',
+                'controls' => ['legal-authority', 'device-isolation', 'photographic-record', 'chain-of-custody'],
+            ],
+            [
+                'lane' => 'Acquire',
+                'tempo' => $signals['deleted_data_needed'] || $signals['locked_device'] ? 'High' : 'Standard',
+                'objective' => 'Select logical, file-system, physical, cloud, and memory routes based on feasibility and expected evidence yield.',
+                'controls' => ['method-selection-rationale', 'tool-version-record', 'tool-coverage-matrix'],
+            ],
+            [
+                'lane' => 'Decode',
+                'tempo' => $signals['e2ee_apps_present'] || $signals['cloud_tokens_present'] ? 'High' : 'Standard',
+                'objective' => 'Parse databases, application storage, synchronized records, media stores, and token-bearing artifacts with validation.',
+                'controls' => ['independent-verification', 'privacy-minimization', 'confidence-labels'],
+            ],
+            [
+                'lane' => 'Reverse',
+                'tempo' => $signals['malware_suspected'] || $signals['native_libraries_present'] ? 'High' : 'Targeted',
+                'objective' => 'Review APK structure, native libraries, anti-analysis behavior, permissions, runtime calls, and file-write behavior.',
+                'controls' => ['static-malware-review', 'dynamic-malware-review', 'native-code-risk', 'anti-analysis-checks'],
+            ],
+            [
+                'lane' => 'Recover',
+                'tempo' => $signals['wiping_suspected'] || $signals['deleted_data_needed'] ? 'High' : 'Targeted',
+                'objective' => 'Separate deleted content recovery, metadata recovery, overwrite evidence, and residual execution traces.',
+                'controls' => ['wiping-claim-review', 'recoverability-test', 'standards-review'],
+            ],
+            [
+                'lane' => 'Report',
+                'tempo' => $signals['court_report'] ? 'High' : 'Standard',
+                'objective' => 'Produce a limitations-aware report with hash manifests, confidence labels, timeline anchors, and reproducible appendices.',
+                'controls' => ['limitations-statement', 'peer-review', 'reproducible-appendix', 'audit-retention'],
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, bool> $signals
+     * @return array<int, array<string, mixed>>
+     */
+    private function evidenceConstellation(array $signals): array
+    {
+        $roles = [
+            'device-identity' => 'Anchor',
+            'installed-apps' => $signals['malware_suspected'] ? 'Suspect Surface' : 'Context',
+            'contacts-accounts' => 'Identity Link',
+            'messages-notifications' => $signals['e2ee_apps_present'] ? 'Volatile Context' : 'Communication',
+            'browser-app-data' => 'Application State',
+            'media-metadata' => 'Timeline Support',
+            'deleted-unallocated' => $signals['deleted_data_needed'] ? 'Recovery Critical' : 'Validation',
+            'malware-indicators' => $signals['malware_suspected'] ? 'Primary Threat' : 'Screening',
+            'cloud-sync-artifacts' => $signals['cloud_relevant'] ? 'External Corroboration' : 'Optional',
+        ];
+
+        $constellation = [];
+        foreach ($this->repository->evidenceFeatures() as $feature) {
+            $id = (string) $feature['id'];
+            $constellation[] = [
+                'id' => $id,
+                'name' => (string) $feature['name'],
+                'role' => $roles[$id] ?? 'Supporting',
+                'criticality' => $this->featureCriticality($id, $signals),
+                'validation' => $this->featureValidation($id, $signals),
+            ];
+        }
+
+        usort($constellation, static fn (array $left, array $right): int => $right['criticality'] <=> $left['criticality']);
+
+        return $constellation;
+    }
+
+    /**
+     * @param array<string, bool> $signals
+     */
+    private function featureCriticality(string $featureId, array $signals): int
+    {
+        $score = match ($featureId) {
+            'device-identity' => 78,
+            'installed-apps' => 66,
+            'contacts-accounts' => 58,
+            'messages-notifications' => 62,
+            'browser-app-data' => 70,
+            'media-metadata' => 56,
+            'deleted-unallocated' => 50,
+            'malware-indicators' => 52,
+            'cloud-sync-artifacts' => 55,
+            default => 50,
+        };
+
+        $score += $featureId === 'deleted-unallocated' && $signals['deleted_data_needed'] ? 30 : 0;
+        $score += $featureId === 'malware-indicators' && $signals['malware_suspected'] ? 32 : 0;
+        $score += $featureId === 'cloud-sync-artifacts' && $signals['cloud_relevant'] ? 28 : 0;
+        $score += $featureId === 'messages-notifications' && $signals['e2ee_apps_present'] ? 18 : 0;
+        $score += $featureId === 'browser-app-data' && $signals['wiping_suspected'] ? 18 : 0;
+
+        return max(0, min(100, $score));
+    }
+
+    /**
+     * @param array<string, bool> $signals
+     */
+    private function featureValidation(string $featureId, array $signals): string
+    {
+        return match ($featureId) {
+            'device-identity' => 'Correlate settings, build properties, extraction metadata, SIM/account records, and photographs.',
+            'installed-apps' => 'Compare package inventory, signing certificates, install times, permissions, APK hashes, and tool output.',
+            'contacts-accounts' => 'Validate account links across device records, cloud exports, app databases, and contact providers.',
+            'messages-notifications' => $signals['e2ee_apps_present']
+                ? 'Preserve notification, database, attachment, backup, and screen-state records before live context is lost.'
+                : 'Correlate message databases, notifications, backups, and timestamps across parsers.',
+            'browser-app-data' => 'Review SQLite, WebView, cache, preferences, tokens, media-store references, and runtime traces.',
+            'media-metadata' => 'Validate EXIF, thumbnails, media-store entries, filesystem timestamps, and recovered previews.',
+            'deleted-unallocated' => 'Use physical or filesystem review when feasible, then confirm recoverability with independent tools.',
+            'malware-indicators' => 'Pair static APK and native-code review with dynamic execution, network capture, and memory triage.',
+            'cloud-sync-artifacts' => 'Confirm authority, export source, backup timeline, account state, and remote-deletion risk.',
+            default => 'Apply independent validation and confidence labeling.',
+        };
+    }
+
+    /**
+     * @param array<string, bool> $signals
+     * @param array<int, array<string, mixed>> $priorityStack
+     * @return array<int, array<string, string>>
+     */
+    private function decisionCards(array $signals, array $priorityStack): array
+    {
+        $firstMethod = $priorityStack[0]['name'] ?? 'Method comparison';
+        $cards = [
+            [
+                'title' => 'First Move',
+                'body' => $signals['time_sensitive']
+                    ? 'Preserve live state, network exposure, lock status, and volatile traces before standard extraction.'
+                    : 'Confirm authority, scope, identifiers, and baseline photographs before acquisition.',
+            ],
+            [
+                'title' => 'Lead Method',
+                'body' => 'Use ' . $firstMethod . ' as the lead acquisition or analysis lane, then validate critical artifacts independently.',
+            ],
+            [
+                'title' => 'Report Posture',
+                'body' => $signals['court_report']
+                    ? 'Prepare a limitations-first report with tool versions, hashes, confidence labels, and a reproducible appendix.'
+                    : 'Prepare an operational report with evidence gaps, next actions, and validation status.',
+            ],
+        ];
+
+        if ($signals['wiping_suspected']) {
+            $cards[] = [
+                'title' => 'Anti-Forensics Lens',
+                'body' => 'Separate wiping claims from overwrite evidence, content recovery, metadata recovery, and residual execution traces.',
+            ];
+        }
+
+        if ($signals['malware_suspected']) {
+            $cards[] = [
+                'title' => 'Stealth Lens',
+                'body' => 'Combine static APK review, runtime monitoring, native-code review, and memory triage before concluding behavior.',
+            ];
+        }
+
+        return $cards;
+    }
+
+    /**
+     * @param array<string, bool> $signals
+     * @return array<int, string>
+     */
+    private function validationBacklog(array $signals): array
+    {
+        $items = [
+            'Record legal authority, device identifiers, tool versions, extraction mode, and hash manifests.',
+            'Cross-validate high-value artifacts with a second parser or manual SQLite/file review.',
+            'Create a confidence-labeled timeline with source, timestamp basis, and validation notes.',
+        ];
+
+        if ($signals['wiping_suspected']) {
+            $items[] = 'Test wiping claims with static review, runtime writes, recoverability attempts, and residual artifact analysis.';
+        }
+        if ($signals['memory_needed']) {
+            $items[] = 'Decide whether process memory, full memory, or emulator reproduction is feasible and document constraints.';
+        }
+        if ($signals['cloud_relevant']) {
+            $items[] = 'Preserve cloud authority, export records, account state, MFA constraints, and sync timeline.';
+        }
+        if ($signals['native_libraries_present']) {
+            $items[] = 'Review native libraries for exploitability indicators, unsafe calls, packed code, and memory exposure.';
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $priorityStack
+     */
+    private function analystBrief(string $missionProfile, int $urgencyScore, array $priorityStack): string
+    {
+        $lead = $priorityStack[0]['name'] ?? 'method comparison';
+        return $missionProfile . ' with urgency ' . $urgencyScore . '/100. Lead with '
+            . $lead . ', preserve volatile context early, and treat validation gaps as reportable limitations.';
+    }
+
+    /**
+     * @param array<string, bool> $signals
+     */
+    private function methodWhy(string $methodId, array $signals): string
+    {
+        return match ($methodId) {
+            'physical-acquisition' => $signals['deleted_data_needed']
+                ? 'Highest value for deleted and unallocated evidence when device state and authority allow.'
+                : 'Useful for completeness, but feasibility depends on encryption and device support.',
+            'cloud-acquisition' => $signals['locked_device']
+                ? 'Strong fallback when device access is constrained and authorized cloud records are in scope.'
+                : 'Corroborates account state, backups, sync timelines, and remote activity.',
+            'memory-acquisition' => $signals['memory_needed'] || $signals['malware_suspected']
+                ? 'Prioritizes volatile secrets, stealth behavior, process state, and malware indicators.'
+                : 'Targeted option for volatile evidence questions.',
+            'app-static-reverse-engineering' => 'Clarifies APK claims, permissions, bytecode, native libraries, and file-wiping implementation.',
+            'app-dynamic-analysis' => 'Validates runtime file writes, network behavior, permissions, services, and anti-analysis responses.',
+            'file-system-acquisition' => 'Strengthens app database, cache, preferences, and filesystem artifact coverage.',
+            'logical-acquisition' => 'Efficient baseline for accessible records and repeatable parser output.',
+            'emulator-dynamic-analysis' => 'Supports controlled reproduction while accounting for anti-emulator behavior.',
+            default => 'Provides targeted context but should be corroborated by stronger evidence sources.',
+        };
     }
 
     /**
@@ -702,6 +1093,283 @@ final class ForensicsLabService
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function sampleTimelineEvents(): array
+    {
+        return [
+            [
+                'timestamp' => '2026-05-06T08:11:00+04:00',
+                'source' => 'Device OS',
+                'artifact' => 'Package manager',
+                'description' => 'File-wiping application launch recorded.',
+                'confidence' => 'High',
+                'hash' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            ],
+            [
+                'timestamp' => '2026-05-06T08:13:21+04:00',
+                'source' => 'Application Data',
+                'artifact' => 'Preferences database',
+                'description' => 'Deletion job completed according to local app state.',
+                'confidence' => 'Medium',
+                'hash' => 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            ],
+            [
+                'timestamp' => '2026-05-06T08:14:02+04:00',
+                'source' => 'Filesystem',
+                'artifact' => 'Media store',
+                'description' => 'Residual thumbnail and metadata entry remained after deletion.',
+                'confidence' => 'High',
+                'hash' => 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+            ],
+            [
+                'timestamp' => '2026-05-06T08:21:49+04:00',
+                'source' => 'Network',
+                'artifact' => 'Runtime capture',
+                'description' => 'Application contacted telemetry endpoint after wiping workflow.',
+                'confidence' => 'Medium',
+                'hash' => 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+            ],
+        ];
+    }
+
+    /**
+     * @param mixed $events
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeTimelineEvents(mixed $events): array
+    {
+        if (is_string($events)) {
+            $decoded = json_decode($events, true);
+            $events = is_array($decoded) ? $decoded : [];
+        }
+
+        if (!is_array($events) || $events === []) {
+            $events = $this->sampleTimelineEvents();
+        }
+
+        $normalized = [];
+        $index = 0;
+        foreach ($events as $event) {
+            if (!is_array($event)) {
+                continue;
+            }
+
+            $parsed = $this->parseEventTime($event['timestamp'] ?? '');
+            $confidence = $this->confidenceValue($event['confidence'] ?? 50);
+            $hash = strtolower(trim((string) ($event['hash'] ?? '')));
+
+            $normalized[] = [
+                'original_index' => $index,
+                'timestamp' => $parsed['iso'],
+                'timestamp_valid' => $parsed['valid'],
+                'source' => $this->cleanText($event['source'] ?? 'Unknown source'),
+                'artifact' => $this->cleanText($event['artifact'] ?? 'Unspecified artifact'),
+                'description' => $this->cleanText($event['description'] ?? 'Event without description'),
+                'confidence' => $confidence,
+                'confidence_label' => $this->confidenceTier($confidence),
+                'hash' => preg_match('/^[a-f0-9]{64}$/', $hash) ? $hash : '',
+            ];
+            $index++;
+        }
+
+        usort($normalized, static function (array $left, array $right): int {
+            return strcmp((string) $left['timestamp'], (string) $right['timestamp']);
+        });
+
+        return $normalized;
+    }
+
+    /**
+     * @return array{iso: string, valid: bool}
+     */
+    private function parseEventTime(mixed $value): array
+    {
+        $raw = trim((string) $value);
+        try {
+            $date = new \DateTimeImmutable($raw);
+            return [
+                'iso' => $date->format(\DateTimeInterface::ATOM),
+                'valid' => true,
+            ];
+        } catch (\Throwable) {
+            return [
+                'iso' => '1970-01-01T00:00:00+00:00',
+                'valid' => false,
+            ];
+        }
+    }
+
+    private function confidenceValue(mixed $value): int
+    {
+        if (is_numeric($value)) {
+            return max(0, min(100, (int) $value));
+        }
+
+        return match (strtolower(trim((string) $value))) {
+            'confirmed', 'high' => 90,
+            'probable', 'medium' => 68,
+            'possible', 'low' => 40,
+            'unsupported' => 18,
+            default => 50,
+        };
+    }
+
+    private function confidenceTier(int $score): string
+    {
+        return match (true) {
+            $score >= 82 => 'High',
+            $score >= 58 => 'Medium',
+            $score >= 35 => 'Low',
+            default => 'Fragile',
+        };
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $events
+     * @return array<string, int>
+     */
+    private function sourceMap(array $events): array
+    {
+        $map = [];
+        foreach ($events as $event) {
+            $source = (string) $event['source'];
+            $map[$source] = ($map[$source] ?? 0) + 1;
+        }
+        ksort($map);
+
+        return $map;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $events
+     * @return array<int, array<string, mixed>>
+     */
+    private function timelineClusters(array $events): array
+    {
+        $clusters = [];
+        foreach ($events as $event) {
+            $hour = substr((string) $event['timestamp'], 0, 13) . ':00';
+            if (!isset($clusters[$hour])) {
+                $clusters[$hour] = [
+                    'window' => $hour,
+                    'events' => 0,
+                    'sources' => [],
+                    'highest_confidence' => 0,
+                ];
+            }
+            $clusters[$hour]['events']++;
+            $clusters[$hour]['sources'][(string) $event['source']] = true;
+            $clusters[$hour]['highest_confidence'] = max($clusters[$hour]['highest_confidence'], (int) $event['confidence']);
+        }
+
+        return array_values(array_map(static function (array $cluster): array {
+            $cluster['source_count'] = count($cluster['sources']);
+            $cluster['sources'] = array_keys($cluster['sources']);
+            return $cluster;
+        }, $clusters));
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $events
+     * @return array<int, array<string, mixed>>
+     */
+    private function timelineAnchors(array $events): array
+    {
+        $anchors = array_values(array_filter($events, static fn (array $event): bool => (int) $event['confidence'] >= 82));
+        return array_slice($anchors, 0, 6);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $events
+     * @return array<int, string>
+     */
+    private function timelineAnomalies(array $events): array
+    {
+        $anomalies = [];
+        if ($events === []) {
+            return ['No timeline events were available for reconstruction.'];
+        }
+
+        $originalIndexes = array_column($events, 'original_index');
+        $sortedIndexes = $originalIndexes;
+        sort($sortedIndexes);
+        if ($originalIndexes !== $sortedIndexes) {
+            $anomalies[] = 'Submitted events required chronological normalization.';
+        }
+
+        $invalid = count(array_filter($events, static fn (array $event): bool => !$event['timestamp_valid']));
+        if ($invalid > 0) {
+            $anomalies[] = $invalid . ' event timestamps could not be parsed and require examiner review.';
+        }
+
+        $lowConfidence = count(array_filter($events, static fn (array $event): bool => (int) $event['confidence'] < 50));
+        if ($lowConfidence > 0) {
+            $anomalies[] = $lowConfidence . ' low-confidence events should not be used as primary anchors.';
+        }
+
+        $sourceCount = count($this->sourceMap($events));
+        if ($sourceCount < 3) {
+            $anomalies[] = 'Timeline uses fewer than three independent source families.';
+        }
+
+        for ($i = 1; $i < count($events); $i++) {
+            $previous = new \DateTimeImmutable((string) $events[$i - 1]['timestamp']);
+            $current = new \DateTimeImmutable((string) $events[$i]['timestamp']);
+            $gap = $current->getTimestamp() - $previous->getTimestamp();
+            if ($gap > 14400) {
+                $anomalies[] = 'Gap greater than four hours between ' . $events[$i - 1]['artifact'] . ' and ' . $events[$i]['artifact'] . '.';
+            }
+        }
+
+        $hashes = array_filter(array_column($events, 'hash'));
+        if (count($hashes) !== count(array_unique($hashes))) {
+            $anomalies[] = 'Duplicate evidence hashes appear in multiple timeline events; confirm whether they reference the same artifact.';
+        }
+
+        return $anomalies;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $events
+     * @param array<int, string> $anomalies
+     */
+    private function timelineConfidence(array $events, array $anomalies): int
+    {
+        if ($events === []) {
+            return 0;
+        }
+
+        $average = (int) round(array_sum(array_column($events, 'confidence')) / count($events));
+        $penalty = min(30, count($anomalies) * 6);
+
+        return max(0, min(100, $average - $penalty));
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $events
+     * @param array<int, string> $anomalies
+     * @return array<int, string>
+     */
+    private function reconstructionSteps(array $events, array $anomalies): array
+    {
+        $steps = [
+            'Use high-confidence events as anchors and keep low-confidence events as supporting context.',
+            'Normalize timestamps, timezone assumptions, source clocks, and acquisition times before final reporting.',
+            'Link every event to an evidence item, parser output, hash, screenshot, or examiner note.',
+        ];
+
+        if ($anomalies !== []) {
+            $steps[] = 'Resolve anomaly notes before treating the reconstruction as final.';
+        }
+        if (count($this->sourceMap($events)) >= 3) {
+            $steps[] = 'Prioritize cross-source agreement because the timeline includes multiple source families.';
+        }
+
+        return $steps;
+    }
+
+    /**
      * @param mixed $manifest
      * @return array<string, string>
      */
@@ -778,4 +1446,3 @@ final class ForensicsLabService
         ];
     }
 }
-

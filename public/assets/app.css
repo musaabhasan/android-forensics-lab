@@ -199,7 +199,11 @@ button:hover {
 
 .metric-grid,
 .card-grid,
-.stage-grid {
+.stage-grid,
+.module-grid,
+.lane-grid,
+.decision-grid,
+.constellation-detail {
   display: grid;
   gap: 16px;
   margin: 18px 0 34px;
@@ -217,9 +221,28 @@ button:hover {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.module-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.lane-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.decision-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.constellation-detail {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .metric-grid article,
 .card,
-.stage-card {
+.stage-card,
+.module-card,
+.lane-card,
+.decision-card {
   min-width: 0;
   padding: 18px;
   border: 1px solid var(--line);
@@ -235,7 +258,9 @@ button:hover {
 }
 
 .card h3,
-.stage-card h3 {
+.stage-card h3,
+.module-card h3,
+.lane-card h3 {
   margin: 8px 0;
   font-size: 1.05rem;
   line-height: 1.28;
@@ -250,10 +275,192 @@ button:hover {
   border-top: 4px solid var(--accent);
 }
 
+.module-card {
+  border-left: 4px solid var(--accent-2);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfaf7 100%);
+}
+
+.lane-card {
+  border-top: 4px solid #334155;
+}
+
+.decision-card {
+  background: #f7faf8;
+  border-color: #cfe2da;
+}
+
+.decision-card span,
+.module-card span,
+.lane-card span {
+  color: var(--accent-3);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .research-card {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.command-strip {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 14px;
+  margin: 16px 0 28px;
+}
+
+.command-strip article {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.command-strip span {
+  color: var(--accent-2);
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.command-strip strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.28rem;
+  line-height: 1.2;
+}
+
+.command-strip p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.workbench-preview {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 34px;
+}
+
+.stack-panel,
+.constellation-panel {
+  margin: 0;
+}
+
+.rank-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.rank-list div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid #dbe4ea;
+}
+
+.rank-list strong {
+  color: var(--ink);
+}
+
+.rank-list span {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.constellation-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.constellation-node {
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+  align-content: start;
+  padding: 14px;
+  border: 1px solid #d6e3e1;
+  border-radius: 8px;
+  background: #f8fbfa;
+}
+
+.constellation-node span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 32px;
+  border-radius: 6px;
+  background: #dbeee8;
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.constellation-node strong {
+  line-height: 1.25;
+}
+
+.constellation-node small {
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.detail-node {
+  min-height: 0;
+}
+
+.detail-node p {
+  margin: 0;
+}
+
+.workbench-empty {
+  border-style: dashed;
+  box-shadow: none;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.command-form .toggle-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.source-bars {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.source-bar {
+  display: grid;
+  gap: 6px;
+}
+
+.source-bar span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+
+.source-bar strong {
+  display: flex;
+  align-items: center;
+  min-width: 40px;
+  height: 24px;
+  padding-left: 8px;
+  border-radius: 6px;
+  background: #d9eee8;
+  color: var(--accent-3);
+  font-size: 0.86rem;
 }
 
 .section-head {
@@ -495,9 +702,22 @@ footer {
   .metric-grid,
   .stage-grid,
   .card-grid,
+  .module-grid,
+  .lane-grid,
+  .decision-grid,
+  .constellation-detail,
   .form-grid,
   .toggle-row,
   .control-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .command-strip,
+  .workbench-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .constellation-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -516,9 +736,18 @@ footer {
   .metric-grid,
   .stage-grid,
   .card-grid,
+  .module-grid,
+  .lane-grid,
+  .decision-grid,
+  .constellation-detail,
   .form-grid,
   .toggle-row,
+  .command-form .toggle-row,
   .control-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .constellation-grid {
     grid-template-columns: 1fr;
   }
 
@@ -537,4 +766,3 @@ footer {
     flex-direction: column;
   }
 }
-

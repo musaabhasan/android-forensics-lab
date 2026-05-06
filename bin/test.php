@@ -24,6 +24,7 @@ function assertThat(bool $condition, string $message): void
 $summary = $service->summary();
 assertThat($summary['metrics']['research_sources'] === 5, 'Research source count must be five.');
 assertThat($summary['metrics']['workflow_stages'] === 8, 'Workflow should contain eight stages.');
+assertThat($summary['metrics']['advanced_modules'] === 6, 'Advanced module count should be six.');
 assertThat($summary['metrics']['evidence_features'] === 9, 'Evidence feature model should contain nine features.');
 assertThat($summary['metrics']['acquisition_methods'] === 9, 'Method model should contain nine methods.');
 assertThat($summary['metrics']['tool_profiles'] === 10, 'Tool profile catalog should contain ten entries.');
@@ -143,11 +144,49 @@ assertThat($ledgerChanged['merkle_root'] !== $ledgerOne['merkle_root'], 'Ledger 
 $emptyLedger = $service->hashLedger(['case_name' => 'Empty manifest', 'manifest' => []]);
 assertThat($emptyLedger['merkle_root'] === str_repeat('0', 64), 'Empty manifest should have a zero root.');
 
+$workbench = $service->commandWorkbench([
+    'scenario_name' => 'Locked stealth and wiping case',
+    'locked_device' => true,
+    'deleted_data_needed' => true,
+    'cloud_relevant' => true,
+    'malware_suspected' => true,
+    'memory_needed' => true,
+    'wiping_suspected' => true,
+    'active_network' => true,
+    'time_sensitive' => true,
+    'native_libraries_present' => true,
+    'e2ee_apps_present' => true,
+    'court_report' => true,
+]);
+assertThat($workbench['mission_profile'] === 'Volatile-first stealth investigation', 'Workbench should detect a volatile-first stealth profile.');
+assertThat($workbench['urgency_score'] >= 85, 'High-risk workbench scenario should have critical urgency.');
+assertThat(count($workbench['priority_stack']) === 5, 'Workbench should return five priority methods.');
+assertThat(count($workbench['operational_lanes']) === 6, 'Workbench should return six operational lanes.');
+assertThat(count($workbench['evidence_constellation']) === 9, 'Workbench should map all evidence features.');
+assertThat($workbench['evidence_constellation'][0]['criticality'] >= 80, 'Constellation should prioritize critical features.');
+
+$timeline = $service->timelineFusion([
+    'case_name' => 'Timeline test',
+    'events' => [
+        ['timestamp' => '2026-05-06T09:00:00+04:00', 'source' => 'Filesystem', 'artifact' => 'Media store', 'description' => 'Artifact remained', 'confidence' => 'High'],
+        ['timestamp' => '2026-05-06T08:00:00+04:00', 'source' => 'Device OS', 'artifact' => 'Package event', 'description' => 'Application launched', 'confidence' => 'High'],
+        ['timestamp' => '2026-05-06T13:45:00+04:00', 'source' => 'Network', 'artifact' => 'Runtime capture', 'description' => 'Remote endpoint contacted', 'confidence' => 'Medium'],
+    ],
+]);
+assertThat($timeline['event_count'] === 3, 'Timeline fusion should include three events.');
+assertThat($timeline['source_count'] === 3, 'Timeline fusion should detect three sources.');
+assertThat(count($timeline['clusters']) >= 2, 'Timeline fusion should create activity clusters.');
+assertThat(count($timeline['anchors']) >= 2, 'Timeline fusion should return high-confidence anchors.');
+assertThat(count($timeline['anomalies']) >= 1, 'Out-of-order or gapped timeline should produce anomaly notes.');
+assertThat($timeline['confidence_score'] > 0, 'Timeline confidence should be calculated.');
+
 $migration = file_get_contents(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'migrations' . DIRECTORY_SEPARATOR . '001_create_core_tables.sql');
 $seed = file_get_contents(dirname(__DIR__) . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'seeders' . DIRECTORY_SEPARATOR . '001_seed_research_data.sql');
 assertThat(is_string($migration) && str_contains($migration, 'CREATE TABLE IF NOT EXISTS case_assessments'), 'Migration must create case assessments.');
 assertThat(is_string($migration) && str_contains($migration, 'CREATE TABLE IF NOT EXISTS wiping_evaluations'), 'Migration must create wiping evaluations.');
 assertThat(is_string($migration) && str_contains($migration, 'CREATE TABLE IF NOT EXISTS hash_ledger_runs'), 'Migration must create hash ledger runs.');
+assertThat(is_string($migration) && str_contains($migration, 'CREATE TABLE IF NOT EXISTS workbench_runs'), 'Migration must create workbench runs.');
+assertThat(is_string($migration) && str_contains($migration, 'CREATE TABLE IF NOT EXISTS timeline_fusions'), 'Migration must create timeline fusions.');
 assertThat(is_string($migration) && str_contains($migration, 'CREATE TABLE IF NOT EXISTS chain_of_custody_events'), 'Migration must create custody events.');
 assertThat(is_string($seed) && str_contains($seed, '10.35444/IJANA.2025.17407'), 'Seed must include the Android forensics literature review DOI.');
 assertThat(is_string($seed) && str_contains($seed, '10.1111/1556-4029.70174'), 'Seed must include the file-wiping study DOI.');
