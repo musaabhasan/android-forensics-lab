@@ -1,4 +1,4 @@
-﻿# Android Digital Forensics Lab
+# Android Digital Forensics Lab
 
 Advanced PHP 8 and MySQL platform for Android forensic casework, acquisition planning, anti-forensics evaluation, volatile evidence triage, evidence integrity, and research-aligned reporting.
 
