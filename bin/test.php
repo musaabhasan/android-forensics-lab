@@ -24,7 +24,7 @@ function assertThat(bool $condition, string $message): void
 $summary = $service->summary();
 assertThat($summary['metrics']['research_sources'] === 5, 'Research source count must be five.');
 assertThat($summary['metrics']['workflow_stages'] === 8, 'Workflow should contain eight stages.');
-assertThat($summary['metrics']['advanced_modules'] === 6, 'Advanced module count should be six.');
+assertThat($summary['metrics']['advanced_modules'] === 10, 'Advanced module count should be ten.');
 assertThat($summary['metrics']['evidence_features'] === 9, 'Evidence feature model should contain nine features.');
 assertThat($summary['metrics']['acquisition_methods'] === 9, 'Method model should contain nine methods.');
 assertThat($summary['metrics']['tool_profiles'] === 10, 'Tool profile catalog should contain ten entries.');
@@ -38,6 +38,66 @@ assertThat(in_array('sanna-2026-thesis', $sourceIds, true), 'Stealth-attack thes
 assertThat(in_array('gunay-gul-ertam-2026', $sourceIds, true), 'Comparative method study must be present.');
 assertThat(in_array('oh-et-al-2026', $sourceIds, true), 'File-wiping study must be present.');
 assertThat(in_array('bhardwaj-kaushik-2023', $sourceIds, true), 'Practical digital forensics book must be present.');
+
+$expertAudit = $service->expertAudit();
+assertThat($expertAudit['audit_score'] === 100, 'Expert audit should cover all identified pain points.');
+assertThat($expertAudit['pain_point_count'] === 12, 'Expert audit should model twelve Android forensics pain points.');
+assertThat($expertAudit['covered_count'] === 12, 'Expert audit should mark all new pain points as covered.');
+$auditAreas = array_column($expertAudit['field_pain_points'], 'area');
+assertThat(in_array('Tool disagreement', $auditAreas, true), 'Expert audit should include parser and tool disagreement risk.');
+assertThat(in_array('Modern encryption and lock state', $auditAreas, true), 'Expert audit should include encryption and lock-state risk.');
+
+$acquisition = $service->acquisitionReadiness([
+    'android_version' => 'Android 14',
+    'lock_state' => 'locked-before-first-unlock',
+    'fbe_enabled' => true,
+    'usb_debugging' => false,
+    'cloud_authority' => true,
+    'apk_available' => false,
+]);
+assertThat($acquisition['ranked_paths'][0]['id'] === 'cloud-acquisition', 'Locked before-first-unlock case should prioritize authorized cloud acquisition when APK review is unavailable.');
+assertThat(count($acquisition['ranked_paths']) === 7, 'Acquisition planner should return seven acquisition paths.');
+assertThat(str_contains(implode(' ', $acquisition['blockers']), 'Before-first-unlock'), 'Acquisition planner should flag before-first-unlock FBE blockers.');
+assertThat(str_contains(implode(' ', $acquisition['blockers']), 'USB debugging'), 'Acquisition planner should flag unavailable USB debugging while locked.');
+
+$artifacts = $service->artifactTriage([
+    'wiping_suspected' => true,
+    'e2ee_apps_present' => true,
+    'cloud_relevant' => true,
+    'malware_suspected' => true,
+    'external_storage' => true,
+]);
+$topArtifactIds = array_column($artifacts['top_artifacts'], 'id');
+assertThat(count($artifacts['top_artifacts']) === 10, 'Artifact triage should return ten priority artifact families.');
+assertThat(in_array('wiping-residuals', $topArtifactIds, true), 'Artifact triage should elevate wiping residual artifacts.');
+assertThat(in_array('e2ee-apps', $topArtifactIds, true), 'Artifact triage should elevate E2EE application artifacts.');
+assertThat(str_contains(implode(' ', $artifacts['parser_notes']), 'WAL'), 'Artifact triage should warn about WAL and SHM preservation.');
+
+$validation = $service->toolValidation([]);
+assertThat($validation['consensus_score'] === 76, 'Sample validation consensus score should reflect two discrepancy groups.');
+assertThat(count($validation['discrepancies']) === 2, 'Sample validation should identify two discrepancy groups.');
+assertThat($validation['release_gate'] === 'Resolve discrepancies before report release', 'Discrepancies should hold release.');
+assertThat(isset($validation['matrix']['Messages database']['Magnet AXIOM']), 'Validation matrix should preserve per-tool artifact rows.');
+
+$reportReadiness = $service->reportReadiness([]);
+assertThat($reportReadiness['score'] === 69, 'Default report readiness should score the documented baseline.');
+assertThat($reportReadiness['release_decision'] === 'Hold for examiner completion', 'Incomplete report readiness should hold release.');
+assertThat(in_array('Validation Matrix', $reportReadiness['missing_items'], true), 'Report readiness should require validation matrix completion.');
+$completeReport = $service->reportReadiness([
+    'authority' => true,
+    'scope' => true,
+    'chain_of_custody' => true,
+    'hashes' => true,
+    'tool_versions' => true,
+    'validation_matrix' => true,
+    'timeline_anchors' => true,
+    'limitations' => true,
+    'privacy_minimization' => true,
+    'peer_review' => true,
+    'reproducible_appendix' => true,
+]);
+assertThat($completeReport['score'] === 100, 'Complete report readiness should score 100.');
+assertThat($completeReport['release_decision'] === 'Ready for release', 'Complete report readiness should be ready for release.');
 
 $allControlIds = array_map(static fn (array $control): string => (string) $control['id'], $repository->forensicControls());
 $allMethodIds = array_map(static fn (array $method): string => (string) $method['id'], $repository->acquisitionMethods());

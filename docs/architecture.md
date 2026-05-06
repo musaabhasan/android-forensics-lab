@@ -5,7 +5,7 @@ The platform follows a compact PHP 8 architecture that can run as a simple built
 ## Layers
 
 - `public/index.php` handles routing, forms, API entry points, and page rendering.
-- `src/Service/ForensicsLabService.php` contains scoring, command workbench, timeline fusion, method ranking, wiping evaluation, and evidence-ledger logic.
+- `src/Service/ForensicsLabService.php` contains expert audit, acquisition readiness, artifact triage, tool validation, report readiness, scoring, command workbench, timeline fusion, method ranking, wiping evaluation, and evidence-ledger logic.
 - `src/Repository/LabRepository.php` exposes catalog data and optional MySQL persistence.
 - `config/catalog.php` defines research sources, evidence features, acquisition methods, tool profiles, wiping artifacts, workflow stages, and forensic controls.
 - `database/migrations` and `database/seeders` provide the MySQL 8 schema and starter reference data.
@@ -56,6 +56,51 @@ Outputs include:
 - Operational lanes for preservation, acquisition, decoding, reverse review, recovery, and reporting
 - Evidence constellation with feature roles and validation actions
 - Decision cards and validation backlog
+
+## Expert Audit and Acquisition Readiness
+
+The expert audit console maps field pain points to lab capabilities. It focuses on modern encryption, Android fragmentation, app database complexity, tool disagreement, cloud and E2EE evidence, anti-forensics, volatile evidence, timeline confidence, privacy, reporting, managed profiles, and external storage.
+
+The acquisition planner treats method selection as a device-state decision. It normalizes Android version, lock state, USB debugging, bootloader state, root feasibility, cloud authority, work profile, file-based encryption, external storage, APK availability, malware suspicion, and wiping suspicion.
+
+Outputs include:
+
+- Ranked acquisition paths with feasibility scores
+- Critical blockers for encrypted or locked-device scenarios
+- First-hour preservation plan
+- Preservation notes and expert cautions
+
+## Artifact Triage
+
+The artifact triage matrix prioritizes Android evidence families that are frequently missed during parser-only review:
+
+- SQLite, Room, WAL, SHM, journal files, and app-private databases
+- Shared preferences, protobuf, JSON, configuration files, and app state
+- LevelDB, WebView, Chromium storage, cache, cookies, and IndexedDB
+- Notifications, usage state, media store, thumbnails, EXIF, and document providers
+- Accounts, tokens, keystore context, cloud sync, backups, and E2EE app evidence
+- Package records, permissions, APKs, native libraries, runtime traces, wiping residuals, and managed-profile artifacts
+
+The triage output separates collection notes from parser risks so examiners can preserve raw material before transforming it into report tables.
+
+## Tool Validation and Report Readiness
+
+The tool discrepancy validator compares parser results across artifact counts, hashes, confidence scores, and tool names. Disagreement creates a release gate and a validation step, such as raw SQLite/WAL review, media metadata comparison, or static and dynamic APK behavior testing.
+
+The report readiness pack scores whether the case file has:
+
+- Authority and scope
+- Chain of custody
+- Evidence hashes
+- Tool versions
+- Validation matrix
+- Timeline anchors
+- Limitations statement
+- Privacy minimization
+- Peer review
+- Reproducible appendix
+
+The release decision is intentionally conservative: unresolved gaps hold the report for examiner completion.
 
 ## Timeline Fusion
 

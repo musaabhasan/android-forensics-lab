@@ -260,15 +260,20 @@ button:hover {
 .card h3,
 .stage-card h3,
 .module-card h3,
-.lane-card h3 {
+.lane-card h3,
+.decision-card h3 {
   margin: 8px 0;
   font-size: 1.05rem;
   line-height: 1.28;
 }
 
 .card small,
+.expert-card small,
+.artifact-card small,
+.discrepancy-card small,
 .control-item small {
   color: var(--muted);
+  line-height: 1.5;
 }
 
 .method-card {
@@ -287,6 +292,19 @@ button:hover {
 .decision-card {
   background: #f7faf8;
   border-color: #cfe2da;
+}
+
+.expert-card {
+  border-top: 4px solid var(--accent-3);
+}
+
+.artifact-card {
+  border-left: 4px solid var(--accent);
+}
+
+.discrepancy-card {
+  border-left: 4px solid var(--danger);
+  background: #fff8f8;
 }
 
 .decision-card span,

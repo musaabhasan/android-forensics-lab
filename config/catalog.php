@@ -77,6 +77,10 @@ return [
         ['id' => 'wiping-claim-lens', 'name' => 'Wiping Claim Lens', 'mode' => 'Anti-forensics', 'description' => 'Separates content recovery, metadata recovery, implementation behavior, and residual execution traces.'],
         ['id' => 'memory-stealth-lane', 'name' => 'Memory Stealth Lane', 'mode' => 'Volatile evidence', 'description' => 'Prioritizes native code, process memory, anti-analysis signals, emulator constraints, and root feasibility.'],
         ['id' => 'integrity-root-ledger', 'name' => 'Integrity Root Ledger', 'mode' => 'Evidence assurance', 'description' => 'Creates deterministic manifest roots for custody checkpoints and report appendices.'],
+        ['id' => 'acquisition-feasibility', 'name' => 'Acquisition Feasibility Planner', 'mode' => 'Device state intelligence', 'description' => 'Ranks acquisition paths against Android version, lock state, USB debugging, FBE, cloud authority, and root feasibility.'],
+        ['id' => 'artifact-triage-matrix', 'name' => 'Artifact Triage Matrix', 'mode' => 'Parser readiness', 'description' => 'Prioritizes app databases, WAL/SHM files, WebView, E2EE apps, media traces, tokens, and wiping residual artifacts.'],
+        ['id' => 'tool-discrepancy-validator', 'name' => 'Tool Discrepancy Validator', 'mode' => 'Quality assurance', 'description' => 'Compares parser outputs, counts, hashes, and confidence to expose disagreement before formal reporting.'],
+        ['id' => 'report-readiness-pack', 'name' => 'Report Readiness Pack', 'mode' => 'Defensible reporting', 'description' => 'Scores whether a case file has the authority, hashes, limitations, validation, privacy, and peer review needed for release.'],
     ],
     'evidence_features' => [
         ['id' => 'device-identity', 'name' => 'Device Identity', 'category' => 'System', 'weight' => 7, 'description' => 'Device model, Android build, serials, accounts, carrier, SIM, and lock state.'],

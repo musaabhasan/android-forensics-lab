@@ -30,9 +30,33 @@ if ($path === '/api/summary') {
     Json::respond($service->summary());
 }
 
+if ($path === '/api/expert-audit') {
+    Json::respond($service->expertAudit(requestPayload()));
+}
+
 if ($path === '/api/assess') {
     requirePost($method);
     Json::respond($service->assessCase(requestPayload()));
+}
+
+if ($path === '/api/acquisition-readiness') {
+    requirePost($method);
+    Json::respond($service->acquisitionReadiness(requestPayload()));
+}
+
+if ($path === '/api/artifact-triage') {
+    requirePost($method);
+    Json::respond($service->artifactTriage(requestPayload()));
+}
+
+if ($path === '/api/tool-validation') {
+    requirePost($method);
+    Json::respond($service->toolValidation(requestPayload()));
+}
+
+if ($path === '/api/report-readiness') {
+    requirePost($method);
+    Json::respond($service->reportReadiness(requestPayload()));
 }
 
 if ($path === '/api/method-compare') {
@@ -65,13 +89,38 @@ if ($path === '/') {
     exit;
 }
 
+if ($path === '/audit') {
+    echo View::page('Expert Audit | Android Digital Forensics Lab', renderExpertAudit($service));
+    exit;
+}
+
 if ($path === '/casework') {
     echo View::page('Casework | Android Digital Forensics Lab', renderCasework($repository, $service, $method));
     exit;
 }
 
+if ($path === '/acquisition') {
+    echo View::page('Acquisition Readiness | Android Digital Forensics Lab', renderAcquisition($service, $method));
+    exit;
+}
+
+if ($path === '/artifacts') {
+    echo View::page('Artifact Triage | Android Digital Forensics Lab', renderArtifacts($service, $method));
+    exit;
+}
+
 if ($path === '/workbench') {
     echo View::page('Workbench | Android Digital Forensics Lab', renderWorkbench($service, $method));
+    exit;
+}
+
+if ($path === '/validation') {
+    echo View::page('Tool Validation | Android Digital Forensics Lab', renderValidation($service, $method));
+    exit;
+}
+
+if ($path === '/report-readiness') {
+    echo View::page('Report Readiness | Android Digital Forensics Lab', renderReportReadiness($service, $method));
     exit;
 }
 
@@ -182,22 +231,23 @@ function renderDashboard(LabRepository $repository, ForensicsLabService $service
     <h1>A smarter forensic workbench for evidence decisions that need speed, depth, and defensibility.</h1>
     <p class="lead">Plan acquisitions, model stealth and wiping scenarios, fuse timelines, rank methods, preserve integrity roots, and turn Android evidence into a professional case narrative.</p>
     <div class="hero-actions">
+      <a class="button-link" href="/audit">Open Expert Audit</a>
       <a class="button-link" href="/workbench">Open Workbench</a>
-      <a class="button-link" href="/casework">Run Case Assessment</a>
-      <a class="secondary-link" href="/timeline">Fuse Timeline</a>
+      <a class="secondary-link" href="/acquisition">Plan Acquisition</a>
+      <a class="secondary-link" href="/validation">Validate Tools</a>
     </div>
   </div>
   <aside class="hero-aside">
     <span>Scenario preview</span>
     <strong>{$metrics['advanced_modules']} engines</strong>
-    <p>Command workbench, timeline fusion, evidence constellation, wiping lens, memory lane, and integrity ledger.</p>
+    <p>Expert audit, acquisition feasibility, artifact triage, command workbench, timeline fusion, tool validation, report readiness, and integrity ledger.</p>
   </aside>
 </section>
 
 <section class="command-strip">
   <article><span>Lead method</span><strong>{$topMethod}</strong><p>{$topMethodScore}/100 for a high-risk stealth and wiping case.</p></article>
   <article><span>Coverage anchor</span><strong>{$anchorFeature}</strong><p>{$anchorMethod} provides the strongest signal.</p></article>
-  <article><span>Decision model</span><strong>Layered</strong><p>Preserve, acquire, reverse, recover, correlate, and report with confidence labels.</p></article>
+  <article><span>Decision model</span><strong>Expert-gated</strong><p>Plan feasibility, validate parser disagreement, and hold release until evidence is defensible.</p></article>
 </section>
 
 <section class="metric-grid">
@@ -231,6 +281,432 @@ function renderDashboard(LabRepository $repository, ForensicsLabService $service
 <section class="panel recent-panel">
   <h2>Recent Case Assessments</h2>
   <div class="recent-list">{$recentHtml}</div>
+</section>
+HTML;
+}
+
+function renderExpertAudit(ForensicsLabService $service): string
+{
+    $result = $service->expertAudit();
+    $score = View::e($result['audit_score']);
+    $tier = View::e($result['audit_tier']);
+    $covered = View::e($result['covered_count']);
+    $painPointCount = View::e($result['pain_point_count']);
+
+    $rows = '';
+    foreach ($result['field_pain_points'] as $item) {
+        $rows .= '<tr><td>' . View::e($item['area']) . '</td><td>' . View::e($item['severity']) . '</td><td>' . View::e($item['pain_point']) . '</td><td>' . View::e($item['platform_response']) . '</td><td>' . View::e($item['status']) . '</td></tr>';
+    }
+
+    $cards = '';
+    foreach (array_slice($result['field_pain_points'], 0, 6) as $item) {
+        $cards .= '<article class="card expert-card"><span>' . View::e($item['severity']) . '</span><h3>' . View::e($item['area']) . '</h3><p>' . View::e($item['field_impact']) . '</p><small>' . View::e($item['expert_upgrade']) . '</small></article>';
+    }
+
+    $recommendations = '';
+    foreach ($result['expert_recommendations'] as $recommendation) {
+        $recommendations .= '<li>' . View::e($recommendation) . '</li>';
+    }
+
+    return <<<HTML
+<section class="panel paper-detail">
+  <p class="eyebrow">Expert Audit Console</p>
+  <h1>Field pain points mapped to operational Android forensic capabilities.</h1>
+  <p class="lead">This audit translates examiner pain points into specific lab engines for device-state planning, parser coverage, anti-forensics review, validation gates, and report defensibility.</p>
+</section>
+
+<section class="result-panel panel">
+  <div class="result-score">
+    <span>Audit Score</span>
+    <strong>{$score}</strong>
+    <p>{$tier}</p>
+  </div>
+  <div>
+    <h2>{$covered} of {$painPointCount} Areas Covered</h2>
+    <p>The lab now addresses the most common Android evidence risks across acquisition feasibility, artifact parsing, cloud/E2EE context, volatile evidence, tool disagreement, and release readiness.</p>
+  </div>
+  <div>
+    <h2>Expert Recommendations</h2>
+    <ol class="recommendation-list">{$recommendations}</ol>
+  </div>
+</section>
+
+<section class="section-head"><h2>Priority Field Risks</h2><span>Expert review highlights</span></section>
+<div class="card-grid">{$cards}</div>
+
+<section class="panel">
+  <h2>Full Audit Matrix</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Area</th><th>Severity</th><th>Pain point</th><th>Platform response</th><th>Status</th></tr></thead>
+      <tbody>{$rows}</tbody>
+    </table>
+  </div>
+</section>
+HTML;
+}
+
+function renderAcquisition(ForensicsLabService $service, string $method): string
+{
+    $notice = '';
+    if ($method === 'POST' && !Csrf::validate($_POST['_csrf'] ?? null)) {
+        $notice = '<div class="notice">The acquisition review could not be submitted because the session token expired.</div>';
+        $result = $service->acquisitionReadiness([]);
+    } else {
+        $result = $service->acquisitionReadiness($method === 'POST' ? $_POST : []);
+    }
+
+    $paths = '';
+    foreach ($result['ranked_paths'] as $path) {
+        $paths .= '<article class="card method-card"><span>' . View::e($path['feasibility']) . ' - ' . View::e($path['score']) . '/100</span><h3>' . View::e($path['name']) . '</h3><p>' . View::e($path['rationale']) . '</p></article>';
+    }
+
+    $blockers = '';
+    foreach ($result['blockers'] as $item) {
+        $blockers .= '<li>' . View::e($item) . '</li>';
+    }
+
+    $plan = '';
+    foreach ($result['first_hour_plan'] as $item) {
+        $plan .= '<li>' . View::e($item) . '</li>';
+    }
+
+    $notes = '';
+    foreach ($result['preservation_notes'] as $item) {
+        $notes .= '<li>' . View::e($item) . '</li>';
+    }
+
+    $cautions = '';
+    foreach ($result['expert_cautions'] as $item) {
+        $cautions .= '<li>' . View::e($item) . '</li>';
+    }
+
+    $state = $result['state'];
+    $caseName = View::e($state['case_name']);
+    $androidVersion = View::e($state['android_version']);
+    $lockState = View::e(str_replace('-', ' ', (string) $state['lock_state']));
+    $topPath = View::e($result['ranked_paths'][0]['name'] ?? 'Acquisition plan');
+    $csrf = Csrf::token();
+
+    return <<<HTML
+<section class="panel form-panel">
+  <p class="eyebrow">Acquisition Feasibility Planner</p>
+  <h1>Rank acquisition paths from Android version, encryption state, lock state, cloud authority, and examiner constraints.</h1>
+  {$notice}
+  <form method="post" action="/acquisition">
+    <input type="hidden" name="_csrf" value="{$csrf}">
+    <div class="form-grid">
+      <label>Case name<input name="case_name" value="Locked Android anti-forensics review"></label>
+      <label>Android major version<input name="android_version" value="14"></label>
+      <label>Lock state<select name="lock_state">
+        <option value="locked-after-first-unlock" selected>Locked after first unlock</option>
+        <option value="locked-before-first-unlock">Locked before first unlock</option>
+        <option value="unlocked">Unlocked</option>
+      </select></label>
+    </div>
+    <div class="toggle-row">
+      <label><input type="checkbox" name="usb_debugging" value="1"> USB debugging available</label>
+      <label><input type="checkbox" name="bootloader_unlocked" value="1"> Bootloader unlocked</label>
+      <label><input type="checkbox" name="root_possible" value="1"> Root feasible</label>
+      <label><input type="checkbox" name="cloud_authority" value="1" checked> Cloud authority available</label>
+      <label><input type="checkbox" name="work_profile" value="1"> Work profile present</label>
+      <label><input type="checkbox" name="fbe_enabled" value="1" checked> File-based encryption</label>
+      <label><input type="checkbox" name="external_storage" value="1"> External storage present</label>
+      <label><input type="checkbox" name="apk_available" value="1" checked> APK available</label>
+      <label><input type="checkbox" name="malware_suspected" value="1" checked> Malware suspected</label>
+      <label><input type="checkbox" name="wiping_suspected" value="1" checked> Wiping suspected</label>
+    </div>
+    <button type="submit">Rank Acquisition Paths</button>
+  </form>
+</section>
+
+<section class="command-strip">
+  <article><span>Case</span><strong>{$caseName}</strong><p>Android {$androidVersion}, {$lockState}.</p></article>
+  <article><span>Lead Path</span><strong>{$topPath}</strong><p>Selected from device-state feasibility and expected evidence yield.</p></article>
+  <article><span>Decision Style</span><strong>State-aware</strong><p>Feasibility is separated from evidence value and report defensibility.</p></article>
+</section>
+
+<section class="section-head"><h2>Ranked Acquisition Paths</h2><span>Feasibility and rationale</span></section>
+<div class="card-grid">{$paths}</div>
+
+<section class="result-panel panel">
+  <div>
+    <h2>Critical Blockers</h2>
+    <ol class="recommendation-list">{$blockers}</ol>
+  </div>
+  <div>
+    <h2>First-Hour Plan</h2>
+    <ol class="recommendation-list">{$plan}</ol>
+  </div>
+  <div>
+    <h2>Preservation Notes</h2>
+    <ol class="recommendation-list">{$notes}</ol>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Expert Cautions</h2>
+  <ol class="recommendation-list">{$cautions}</ol>
+</section>
+HTML;
+}
+
+function renderArtifacts(ForensicsLabService $service, string $method): string
+{
+    $notice = '';
+    if ($method === 'POST' && !Csrf::validate($_POST['_csrf'] ?? null)) {
+        $notice = '<div class="notice">The artifact triage could not be submitted because the session token expired.</div>';
+        $result = $service->artifactTriage([]);
+    } else {
+        $result = $service->artifactTriage($method === 'POST' ? $_POST : []);
+    }
+
+    $cards = '';
+    foreach ($result['top_artifacts'] as $artifact) {
+        $cards .= '<article class="card artifact-card"><span>' . View::e($artifact['category']) . ' - ' . View::e($artifact['priority']) . '/100</span><h3>' . View::e($artifact['name']) . '</h3><p>' . View::e($artifact['why_it_matters']) . '</p><small>' . View::e($artifact['collection_notes']) . '</small></article>';
+    }
+
+    $rows = '';
+    foreach ($result['all_artifacts'] as $artifact) {
+        $rows .= '<tr><td>' . View::e($artifact['name']) . '</td><td>' . View::e($artifact['category']) . '</td><td>' . View::e($artifact['priority']) . '</td><td>' . View::e($artifact['parser_risks']) . '</td></tr>';
+    }
+
+    $wins = '';
+    foreach ($result['quick_wins'] as $item) {
+        $wins .= '<li>' . View::e($item) . '</li>';
+    }
+
+    $parserNotes = '';
+    foreach ($result['parser_notes'] as $item) {
+        $parserNotes .= '<li>' . View::e($item) . '</li>';
+    }
+
+    $csrf = Csrf::token();
+
+    return <<<HTML
+<section class="panel form-panel">
+  <p class="eyebrow">Artifact Triage Matrix</p>
+  <h1>Prioritize Android artifact families that examiners often miss when relying on single-tool exports.</h1>
+  {$notice}
+  <form method="post" action="/artifacts">
+    <input type="hidden" name="_csrf" value="{$csrf}">
+    <div class="toggle-row">
+      <label><input type="checkbox" name="e2ee_apps_present" value="1" checked> E2EE apps present</label>
+      <label><input type="checkbox" name="cloud_relevant" value="1" checked> Cloud relevant</label>
+      <label><input type="checkbox" name="wiping_suspected" value="1" checked> Wiping suspected</label>
+      <label><input type="checkbox" name="malware_suspected" value="1" checked> Malware suspected</label>
+      <label><input type="checkbox" name="browser_relevant" value="1" checked> Browser/WebView relevant</label>
+      <label><input type="checkbox" name="media_relevant" value="1" checked> Media relevant</label>
+      <label><input type="checkbox" name="location_relevant" value="1"> Location relevant</label>
+      <label><input type="checkbox" name="work_profile" value="1"> Work profile present</label>
+      <label><input type="checkbox" name="external_storage" value="1"> External storage present</label>
+      <label><input type="checkbox" name="locked_device" value="1"> Locked device</label>
+    </div>
+    <button type="submit">Prioritize Artifacts</button>
+  </form>
+</section>
+
+<section class="result-panel panel">
+  <div>
+    <h2>Quick Wins</h2>
+    <ol class="recommendation-list">{$wins}</ol>
+  </div>
+  <div>
+    <h2>Parser Risk Notes</h2>
+    <ol class="recommendation-list">{$parserNotes}</ol>
+  </div>
+  <div>
+    <h2>Triage Focus</h2>
+    <p>Artifact priority combines baseline forensic value with case signals for encrypted messaging, cloud, wiping, malware, WebView, media, work profiles, and removable storage.</p>
+  </div>
+</section>
+
+<section class="section-head"><h2>Top Artifact Families</h2><span>Priority collection set</span></section>
+<div class="card-grid">{$cards}</div>
+
+<section class="panel">
+  <h2>Complete Artifact Matrix</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Artifact family</th><th>Category</th><th>Priority</th><th>Parser risk</th></tr></thead>
+      <tbody>{$rows}</tbody>
+    </table>
+  </div>
+</section>
+HTML;
+}
+
+function renderValidation(ForensicsLabService $service, string $method): string
+{
+    $notice = '';
+    if ($method === 'POST' && !Csrf::validate($_POST['_csrf'] ?? null)) {
+        $notice = '<div class="notice">The validation matrix could not be submitted because the session token expired.</div>';
+        $result = $service->toolValidation([]);
+    } else {
+        $result = $service->toolValidation($method === 'POST' ? ['results' => $_POST['results'] ?? ''] : []);
+    }
+
+    $sample = View::e(json_encode([
+        ['tool' => 'Magnet AXIOM', 'artifact' => 'Messages database', 'count' => 128, 'hash' => str_repeat('a', 64), 'confidence' => 'High'],
+        ['tool' => 'Belkasoft X', 'artifact' => 'Messages database', 'count' => 126, 'hash' => str_repeat('a', 64), 'confidence' => 'Medium'],
+        ['tool' => 'Autopsy', 'artifact' => 'Media thumbnails', 'count' => 42, 'hash' => str_repeat('b', 64), 'confidence' => 'High'],
+        ['tool' => 'Manual SQLite Review', 'artifact' => 'Media thumbnails', 'count' => 42, 'hash' => str_repeat('b', 64), 'confidence' => 'High'],
+        ['tool' => 'JADX Review', 'artifact' => 'Wiping APK behavior', 'count' => 7, 'hash' => '', 'confidence' => 'Medium'],
+        ['tool' => 'Dynamic Trace', 'artifact' => 'Wiping APK behavior', 'count' => 9, 'hash' => '', 'confidence' => 'Medium'],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+    $matrixRows = '';
+    foreach ($result['matrix'] as $artifact => $toolRows) {
+        foreach ($toolRows as $tool => $row) {
+            $hash = $row['hash'] !== '' ? $row['hash'] : 'N/A';
+            $matrixRows .= '<tr><td>' . View::e($artifact) . '</td><td>' . View::e($tool) . '</td><td>' . View::e($row['count']) . '</td><td class="hash-value">' . View::e($hash) . '</td><td>' . View::e($row['confidence']) . '</td></tr>';
+        }
+    }
+
+    $discrepancies = '';
+    if ($result['discrepancies'] === []) {
+        $discrepancies = '<article class="card"><span>Clear</span><h3>No discrepancies detected</h3><p>The submitted parser outputs are aligned on counts, hashes, and confidence.</p></article>';
+    } else {
+        foreach ($result['discrepancies'] as $item) {
+            $discrepancies .= '<article class="card discrepancy-card"><span>' . View::e($item['issue']) . ' - ' . View::e($item['average_confidence']) . '/100</span><h3>' . View::e($item['artifact']) . '</h3><p>' . View::e($item['validation_step']) . '</p><small>Tools: ' . View::e(implode(', ', $item['tools'])) . '</small></article>';
+        }
+    }
+
+    $steps = '';
+    foreach ($result['validation_steps'] as $item) {
+        $steps .= '<li>' . View::e($item) . '</li>';
+    }
+
+    $score = View::e($result['consensus_score']);
+    $tier = View::e($result['consensus_tier']);
+    $gate = View::e($result['release_gate']);
+    $artifactCount = View::e($result['artifact_count']);
+    $resultCount = View::e($result['result_count']);
+    $csrf = Csrf::token();
+
+    return <<<HTML
+<section class="panel form-panel">
+  <p class="eyebrow">Tool Discrepancy Validator</p>
+  <h1>Compare parser outputs before findings become formal report language.</h1>
+  {$notice}
+  <form method="post" action="/validation">
+    <input type="hidden" name="_csrf" value="{$csrf}">
+    <label>Tool result JSON<textarea name="results" rows="13">{$sample}</textarea></label>
+    <button type="submit">Validate Tool Consensus</button>
+  </form>
+</section>
+
+<section class="result-panel panel">
+  <div class="result-score">
+    <span>Consensus</span>
+    <strong>{$score}</strong>
+    <p>{$tier}</p>
+  </div>
+  <div>
+    <h2>{$gate}</h2>
+    <p>{$resultCount} parser results mapped across {$artifactCount} artifact families.</p>
+  </div>
+  <div>
+    <h2>Validation Steps</h2>
+    <ol class="recommendation-list">{$steps}</ol>
+  </div>
+</section>
+
+<section class="section-head"><h2>Discrepancies</h2><span>Release gate evidence</span></section>
+<div class="card-grid">{$discrepancies}</div>
+
+<section class="panel">
+  <h2>Validation Matrix</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Artifact</th><th>Tool</th><th>Count</th><th>Hash</th><th>Confidence</th></tr></thead>
+      <tbody>{$matrixRows}</tbody>
+    </table>
+  </div>
+</section>
+HTML;
+}
+
+function renderReportReadiness(ForensicsLabService $service, string $method): string
+{
+    $notice = '';
+    if ($method === 'POST' && !Csrf::validate($_POST['_csrf'] ?? null)) {
+        $notice = '<div class="notice">The report readiness pack could not be submitted because the session token expired.</div>';
+        $result = $service->reportReadiness([]);
+    } else {
+        $result = $service->reportReadiness($method === 'POST' ? $_POST : []);
+    }
+
+    $missing = '';
+    if ($result['missing_items'] === []) {
+        $missing = '<li>No missing release criteria detected.</li>';
+    } else {
+        foreach ($result['missing_items'] as $item) {
+            $missing .= '<li>' . View::e($item) . '</li>';
+        }
+    }
+
+    $sections = '';
+    foreach ($result['report_sections'] as $section) {
+        $sections .= '<li>' . View::e($section) . '</li>';
+    }
+
+    $checks = '';
+    foreach ($result['checks'] as $check => $present) {
+        $checks .= '<article class="decision-card"><span>' . View::e($present ? 'Complete' : 'Missing') . '</span><h3>' . View::e(ucwords(str_replace('_', ' ', $check))) . '</h3><p>' . View::e($present ? 'Evidence is ready for the report file.' : 'Complete this item before release.') . '</p></article>';
+    }
+
+    $score = View::e($result['score']);
+    $tier = View::e($result['tier']);
+    $decision = View::e($result['release_decision']);
+    $csrf = Csrf::token();
+
+    return <<<HTML
+<section class="panel form-panel">
+  <p class="eyebrow">Report Readiness Pack</p>
+  <h1>Score whether an Android forensic case file is ready for defensible release.</h1>
+  {$notice}
+  <form method="post" action="/report-readiness">
+    <input type="hidden" name="_csrf" value="{$csrf}">
+    <div class="toggle-row">
+      <label><input type="checkbox" name="authority" value="1" checked> Authority documented</label>
+      <label><input type="checkbox" name="scope" value="1" checked> Scope defined</label>
+      <label><input type="checkbox" name="chain_of_custody" value="1" checked> Chain of custody</label>
+      <label><input type="checkbox" name="hashes" value="1" checked> Hashes recorded</label>
+      <label><input type="checkbox" name="tool_versions" value="1" checked> Tool versions recorded</label>
+      <label><input type="checkbox" name="validation_matrix" value="1"> Validation matrix complete</label>
+      <label><input type="checkbox" name="timeline_anchors" value="1"> Timeline anchors complete</label>
+      <label><input type="checkbox" name="limitations" value="1" checked> Limitations written</label>
+      <label><input type="checkbox" name="privacy_minimization" value="1" checked> Privacy minimization</label>
+      <label><input type="checkbox" name="peer_review" value="1"> Peer review complete</label>
+      <label><input type="checkbox" name="reproducible_appendix" value="1"> Reproducible appendix</label>
+    </div>
+    <button type="submit">Score Report Readiness</button>
+  </form>
+</section>
+
+<section class="result-panel panel">
+  <div class="result-score">
+    <span>Readiness</span>
+    <strong>{$score}</strong>
+    <p>{$tier}</p>
+  </div>
+  <div>
+    <h2>{$decision}</h2>
+    <p>Release requires authority, scope, custody, hashes, tool versions, validation, timeline anchors, limitations, privacy handling, peer review, and reproducible appendices.</p>
+  </div>
+  <div>
+    <h2>Missing Items</h2>
+    <ol class="recommendation-list">{$missing}</ol>
+  </div>
+</section>
+
+<section class="section-head"><h2>Release Criteria</h2><span>Checklist status</span></section>
+<div class="decision-grid">{$checks}</div>
+
+<section class="panel">
+  <h2>Recommended Report Sections</h2>
+  <ol class="recommendation-list">{$sections}</ol>
 </section>
 HTML;
 }

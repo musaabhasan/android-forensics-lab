@@ -343,6 +343,255 @@ final class ForensicsLabService
         return $result;
     }
 
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function expertAudit(array $input = []): array
+    {
+        $painPoints = $this->expertPainPoints();
+        $coverage = [];
+        $implemented = 0;
+
+        foreach ($painPoints as $item) {
+            $status = $item['implemented'] ? 'Covered' : 'Partially Covered';
+            $implemented += $item['implemented'] ? 1 : 0;
+            $coverage[] = [
+                'area' => $item['area'],
+                'severity' => $item['severity'],
+                'pain_point' => $item['pain_point'],
+                'field_impact' => $item['field_impact'],
+                'platform_response' => $item['platform_response'],
+                'status' => $status,
+                'expert_upgrade' => $item['expert_upgrade'],
+            ];
+        }
+
+        $score = (int) round(($implemented / count($painPoints)) * 100);
+
+        return [
+            'audit_name' => $this->cleanText($input['audit_name'] ?? 'Advanced Android forensics expert audit'),
+            'audit_score' => $score,
+            'audit_tier' => $score >= 95 ? 'Comprehensive Coverage' : ($score >= 80 ? 'Strong Coverage' : 'Coverage Gaps'),
+            'pain_point_count' => count($painPoints),
+            'covered_count' => $implemented,
+            'field_pain_points' => $coverage,
+            'expert_recommendations' => [
+                'Treat acquisition method selection as a device-state decision, not a fixed tool workflow.',
+                'Preserve app databases with WAL and SHM companions before parsing or export transformation.',
+                'Record parser disagreements as quality signals and resolve them before report release.',
+                'Separate file content recovery from metadata recovery and residual execution traces in anti-forensics findings.',
+                'Use confidence labels and limitations statements as first-class report artifacts.',
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function acquisitionReadiness(array $input): array
+    {
+        $state = [
+            'case_name' => $this->cleanText($input['case_name'] ?? 'Android acquisition feasibility review'),
+            'android_version' => $this->androidMajorVersion($input['android_version'] ?? '14'),
+            'lock_state' => $this->cleanChoice($input['lock_state'] ?? 'locked-after-first-unlock', ['unlocked', 'locked-after-first-unlock', 'locked-before-first-unlock'], 'locked-after-first-unlock'),
+            'usb_debugging' => $this->bool($input['usb_debugging'] ?? false),
+            'bootloader_unlocked' => $this->bool($input['bootloader_unlocked'] ?? false),
+            'root_possible' => $this->bool($input['root_possible'] ?? false),
+            'cloud_authority' => $this->bool($input['cloud_authority'] ?? true),
+            'work_profile' => $this->bool($input['work_profile'] ?? false),
+            'fbe_enabled' => $this->bool($input['fbe_enabled'] ?? true),
+            'external_storage' => $this->bool($input['external_storage'] ?? false),
+            'apk_available' => $this->bool($input['apk_available'] ?? true),
+            'malware_suspected' => $this->bool($input['malware_suspected'] ?? true),
+            'wiping_suspected' => $this->bool($input['wiping_suspected'] ?? true),
+        ];
+
+        $ranked = $this->acquisitionFeasibilityRows($state);
+
+        return [
+            'state' => $state,
+            'ranked_paths' => $ranked,
+            'blockers' => $this->acquisitionBlockers($state, $ranked),
+            'first_hour_plan' => $this->firstHourPlan($state, $ranked),
+            'preservation_notes' => $this->preservationNotes($state),
+            'expert_cautions' => $this->acquisitionCautions($state),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function artifactTriage(array $input): array
+    {
+        $signals = [
+            'e2ee_apps_present' => $this->bool($input['e2ee_apps_present'] ?? true),
+            'cloud_relevant' => $this->bool($input['cloud_relevant'] ?? true),
+            'wiping_suspected' => $this->bool($input['wiping_suspected'] ?? true),
+            'malware_suspected' => $this->bool($input['malware_suspected'] ?? true),
+            'browser_relevant' => $this->bool($input['browser_relevant'] ?? true),
+            'media_relevant' => $this->bool($input['media_relevant'] ?? true),
+            'location_relevant' => $this->bool($input['location_relevant'] ?? false),
+            'work_profile' => $this->bool($input['work_profile'] ?? false),
+            'external_storage' => $this->bool($input['external_storage'] ?? false),
+            'locked_device' => $this->bool($input['locked_device'] ?? false),
+        ];
+
+        $families = [];
+        foreach ($this->artifactFamilies() as $family) {
+            $score = (int) $family['base_score'];
+            foreach ($family['boosts'] as $signal => $boost) {
+                if (($signals[$signal] ?? false) === true) {
+                    $score += (int) $boost;
+                }
+            }
+            $families[] = [
+                'id' => $family['id'],
+                'name' => $family['name'],
+                'priority' => max(0, min(100, $score)),
+                'category' => $family['category'],
+                'why_it_matters' => $family['why_it_matters'],
+                'collection_notes' => $family['collection_notes'],
+                'parser_risks' => $family['parser_risks'],
+            ];
+        }
+
+        usort($families, static fn (array $left, array $right): int => $right['priority'] <=> $left['priority']);
+
+        return [
+            'signals' => $signals,
+            'top_artifacts' => array_slice($families, 0, 10),
+            'all_artifacts' => $families,
+            'quick_wins' => $this->artifactQuickWins($signals),
+            'parser_notes' => [
+                'Always preserve SQLite WAL and SHM files with the main database.',
+                'Do not treat parser absence as evidence absence; verify with raw file review when findings are important.',
+                'Exported app data may transform timestamps, attachments, or deleted markers; keep raw source files.',
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function toolValidation(array $input): array
+    {
+        $results = $this->normalizeToolResults($input['results'] ?? $this->sampleToolResults());
+        $matrix = [];
+
+        foreach ($results as $row) {
+            $artifact = $row['artifact'];
+            $tool = $row['tool'];
+            if (!isset($matrix[$artifact])) {
+                $matrix[$artifact] = [];
+            }
+            $matrix[$artifact][$tool] = [
+                'count' => $row['count'],
+                'hash' => $row['hash'],
+                'confidence' => $row['confidence'],
+            ];
+        }
+
+        $discrepancies = [];
+        foreach ($matrix as $artifact => $toolRows) {
+            $counts = array_unique(array_column($toolRows, 'count'));
+            $hashes = array_filter(array_unique(array_column($toolRows, 'hash')));
+            $confidence = (int) round(array_sum(array_column($toolRows, 'confidence')) / max(1, count($toolRows)));
+            if (count($counts) > 1 || count($hashes) > 1 || $confidence < 70) {
+                $discrepancies[] = [
+                    'artifact' => $artifact,
+                    'issue' => $this->discrepancyIssue($counts, $hashes, $confidence),
+                    'tools' => array_keys($toolRows),
+                    'average_confidence' => $confidence,
+                    'validation_step' => $this->discrepancyValidationStep($artifact),
+                ];
+            }
+        }
+
+        $consensusScore = max(0, min(100, 100 - (count($discrepancies) * 12)));
+
+        return [
+            'result_count' => count($results),
+            'artifact_count' => count($matrix),
+            'consensus_score' => $consensusScore,
+            'consensus_tier' => $this->confidenceTier($consensusScore),
+            'matrix' => $matrix,
+            'discrepancies' => $discrepancies,
+            'release_gate' => count($discrepancies) === 0 ? 'Ready for report drafting' : 'Resolve discrepancies before report release',
+            'validation_steps' => [
+                'Compare parsed counts with raw database tables and filesystem source files.',
+                'Validate timestamps using at least one independent source.',
+                'Preserve tool logs, parser versions, and export settings with the case record.',
+                'Mark unresolved parser disagreement as a report limitation.',
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $input
+     * @return array<string, mixed>
+     */
+    public function reportReadiness(array $input): array
+    {
+        $checks = [
+            'authority' => $this->bool($input['authority'] ?? true),
+            'scope' => $this->bool($input['scope'] ?? true),
+            'chain_of_custody' => $this->bool($input['chain_of_custody'] ?? true),
+            'hashes' => $this->bool($input['hashes'] ?? true),
+            'tool_versions' => $this->bool($input['tool_versions'] ?? true),
+            'validation_matrix' => $this->bool($input['validation_matrix'] ?? false),
+            'timeline_anchors' => $this->bool($input['timeline_anchors'] ?? false),
+            'limitations' => $this->bool($input['limitations'] ?? true),
+            'privacy_minimization' => $this->bool($input['privacy_minimization'] ?? true),
+            'peer_review' => $this->bool($input['peer_review'] ?? false),
+            'reproducible_appendix' => $this->bool($input['reproducible_appendix'] ?? false),
+        ];
+
+        $weights = [
+            'authority' => 12,
+            'scope' => 9,
+            'chain_of_custody' => 12,
+            'hashes' => 12,
+            'tool_versions' => 8,
+            'validation_matrix' => 12,
+            'timeline_anchors' => 8,
+            'limitations' => 9,
+            'privacy_minimization' => 7,
+            'peer_review' => 7,
+            'reproducible_appendix' => 4,
+        ];
+
+        $score = 0;
+        $missing = [];
+        foreach ($checks as $check => $present) {
+            if ($present) {
+                $score += $weights[$check];
+            } else {
+                $missing[] = $this->readableKey($check);
+            }
+        }
+
+        return [
+            'score' => $score,
+            'tier' => $this->readiness($score, $score >= 85 ? 'Low' : 'Medium'),
+            'checks' => $checks,
+            'missing_items' => $missing,
+            'release_decision' => $score >= 85 && $missing === [] ? 'Ready for release' : 'Hold for examiner completion',
+            'report_sections' => [
+                'Authority and scope',
+                'Device and acquisition state',
+                'Tools, versions, and validation matrix',
+                'Evidence inventory and hash manifest',
+                'Timeline anchors and confidence labels',
+                'Findings, limitations, and privacy handling',
+                'Peer review and reproducible appendix',
+            ],
+        ];
+    }
+
     private function maximumScore(): int
     {
         return array_sum(array_map(
@@ -387,6 +636,436 @@ final class ForensicsLabService
         }
 
         return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    /**
+     * @param array<int, string> $allowed
+     */
+    private function cleanChoice(mixed $value, array $allowed, string $default): string
+    {
+        $value = strtolower(trim((string) $value));
+        return in_array($value, $allowed, true) ? $value : $default;
+    }
+
+    private function androidMajorVersion(mixed $value): int
+    {
+        if (preg_match('/\d+/', (string) $value, $matches) === 1) {
+            return max(4, min(99, (int) $matches[0]));
+        }
+
+        return 14;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function expertPainPoints(): array
+    {
+        return [
+            [
+                'area' => 'Modern encryption and lock state',
+                'severity' => 'Critical',
+                'pain_point' => 'File-based encryption, before-first-unlock state, and locked devices can make expected artifacts unavailable.',
+                'field_impact' => 'An examiner may overpromise deleted-data or app-data recovery when the device state does not support it.',
+                'platform_response' => 'Acquisition feasibility planner ranks paths by Android version, lock state, FBE, USB debugging, bootloader state, root feasibility, and cloud authority.',
+                'expert_upgrade' => 'Added device-state feasibility scoring and first-hour preservation guidance.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'Android fragmentation',
+                'severity' => 'High',
+                'pain_point' => 'OEM builds, security patch level, scoped storage, and profile separation can change what each tool can reach.',
+                'field_impact' => 'Tool output may look complete while silently missing app-private or managed-profile data.',
+                'platform_response' => 'Method ranking and acquisition cautions now treat Android version and work profile as explicit constraints.',
+                'expert_upgrade' => 'Added Android-version and work-profile awareness in acquisition planning.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'SQLite, WAL, and app database complexity',
+                'severity' => 'High',
+                'pain_point' => 'Critical records may be in WAL/SHM companions, Room tables, LevelDB, protobuf, or app caches rather than the main database file.',
+                'field_impact' => 'Single-file exports and parser-only review can miss recent or deleted records.',
+                'platform_response' => 'Artifact triage matrix prioritizes database companions, app storage formats, parser risks, and raw-file validation.',
+                'expert_upgrade' => 'Added artifact family triage and parser-risk notes.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'Tool disagreement',
+                'severity' => 'High',
+                'pain_point' => 'Different forensic suites parse counts, timestamps, attachments, and deleted states differently.',
+                'field_impact' => 'A report can inherit parser bias unless disagreement is visible and resolved.',
+                'platform_response' => 'Tool discrepancy validator compares artifact counts, hashes, confidence, and validation steps.',
+                'expert_upgrade' => 'Added parser consensus scoring and release gates.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'Cloud and E2EE evidence',
+                'severity' => 'High',
+                'pain_point' => 'Cloud backups, tokens, encrypted messaging apps, and notification traces create evidence outside the local extraction.',
+                'field_impact' => 'Important communications may only be visible through notifications, backups, linked devices, or authorized cloud exports.',
+                'platform_response' => 'Workbench signals, artifact triage, and acquisition planner all model cloud authority and E2EE presence.',
+                'expert_upgrade' => 'Added cloud/E2EE signals to triage and mission planning.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'Anti-forensics and file wiping',
+                'severity' => 'High',
+                'pain_point' => 'Wiping apps can fail to wipe content while still leaving execution traces and metadata.',
+                'field_impact' => 'Findings must distinguish content recovery, metadata recovery, overwrite behavior, and residual app/OS traces.',
+                'platform_response' => 'Wiping evaluation separates claims, overwrite evidence, recoverability, standards alignment, and residual traces.',
+                'expert_upgrade' => 'Existing wiping lens is retained and connected to artifact triage.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'Volatile and memory evidence',
+                'severity' => 'High',
+                'pain_point' => 'Process state, keys, malware behavior, and stealth indicators may disappear before standard acquisition finishes.',
+                'field_impact' => 'Delayed acquisition can lose the only evidence of runtime behavior.',
+                'platform_response' => 'Command workbench and acquisition planner prioritize volatile-first preservation when memory or malware signals are present.',
+                'expert_upgrade' => 'Added first-hour plan and memory feasibility cautions.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'Timeline confidence',
+                'severity' => 'Medium',
+                'pain_point' => 'Android timelines mix filesystem, app, cloud, network, and parser timestamps with different reliability.',
+                'field_impact' => 'A neat timeline can be misleading if timestamp basis and confidence are not documented.',
+                'platform_response' => 'Timeline fusion normalizes events, detects gaps, flags low confidence, and produces anchors.',
+                'expert_upgrade' => 'Existing timeline fusion is retained and integrated into report readiness.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'Privacy and scope control',
+                'severity' => 'Medium',
+                'pain_point' => 'Mobile devices contain highly personal data unrelated to the case.',
+                'field_impact' => 'Overcollection can weaken governance, proportionality, and trust.',
+                'platform_response' => 'Case readiness and report readiness both include privacy minimization and scope checks.',
+                'expert_upgrade' => 'Added report release gate for privacy minimization.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'Defensible reporting',
+                'severity' => 'High',
+                'pain_point' => 'Strong technical findings can still fail review if authority, hashes, tool versions, limitations, and peer review are weak.',
+                'field_impact' => 'The case file may not survive legal, audit, or executive scrutiny.',
+                'platform_response' => 'Report readiness pack scores release criteria and identifies missing sections.',
+                'expert_upgrade' => 'Added report readiness scoring and release decision support.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'Managed profiles and enterprise devices',
+                'severity' => 'Medium',
+                'pain_point' => 'Work profiles and mobile device management can split data, restrict access, or remotely alter state.',
+                'field_impact' => 'Personal and work evidence may have separate authorities, containers, and parser behavior.',
+                'platform_response' => 'Acquisition and artifact triage now expose work-profile risk and collection notes.',
+                'expert_upgrade' => 'Added managed-profile signal handling.',
+                'implemented' => true,
+            ],
+            [
+                'area' => 'External storage and removable media',
+                'severity' => 'Medium',
+                'pain_point' => 'SD cards, USB storage, and app export folders may hold evidence outside standard device extraction.',
+                'field_impact' => 'Evidence can be missed if removable media and document providers are not scoped early.',
+                'platform_response' => 'Acquisition planner and artifact triage include external storage and document-provider paths.',
+                'expert_upgrade' => 'Added external-storage signal and triage guidance.',
+                'implemented' => true,
+            ],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @return array<int, array<string, mixed>>
+     */
+    private function acquisitionFeasibilityRows(array $state): array
+    {
+        $unlocked = $state['lock_state'] === 'unlocked';
+        $afterFirstUnlock = $state['lock_state'] === 'locked-after-first-unlock';
+        $modern = $state['android_version'] >= 10;
+        $paths = [
+            [
+                'id' => 'manual-live-review',
+                'name' => 'Manual Live Review',
+                'score' => $unlocked ? 78 : ($afterFirstUnlock ? 42 : 12),
+                'rationale' => 'Useful for visible app state, notifications, account context, and screen evidence when interaction is authorized.',
+            ],
+            [
+                'id' => 'logical-acquisition',
+                'name' => 'Logical Acquisition',
+                'score' => ($unlocked ? 62 : 18) + ($state['usb_debugging'] ? 22 : 0) - ($state['work_profile'] ? 8 : 0),
+                'rationale' => 'Best baseline when the device is unlocked or USB debugging and tool support are available.',
+            ],
+            [
+                'id' => 'file-system-acquisition',
+                'name' => 'File-System Acquisition',
+                'score' => ($state['root_possible'] ? 74 : 30) + ($unlocked ? 10 : 0) - ($modern && !$state['root_possible'] ? 10 : 0),
+                'rationale' => 'High value for app-private data, WAL/SHM files, caches, and parser validation when access is feasible.',
+            ],
+            [
+                'id' => 'physical-imaging',
+                'name' => 'Physical Imaging',
+                'score' => ($state['bootloader_unlocked'] ? 55 : 20) + ($state['external_storage'] ? 18 : 0) - ($state['fbe_enabled'] && $modern ? 18 : 0),
+                'rationale' => 'Valuable for deleted and unallocated evidence, but modern FBE and locked bootloaders often limit feasibility.',
+            ],
+            [
+                'id' => 'cloud-acquisition',
+                'name' => 'Cloud Acquisition',
+                'score' => $state['cloud_authority'] ? 86 : 24,
+                'rationale' => 'Often essential for locked devices, backups, synced photos, cloud messaging, and account activity.',
+            ],
+            [
+                'id' => 'memory-acquisition',
+                'name' => 'Memory Acquisition',
+                'score' => ($state['root_possible'] || $unlocked ? 58 : 20) + ($state['malware_suspected'] ? 18 : 0),
+                'rationale' => 'Targets volatile secrets, process state, and stealth behavior before they disappear.',
+            ],
+            [
+                'id' => 'apk-static-dynamic-review',
+                'name' => 'APK Static and Dynamic Review',
+                'score' => ($state['apk_available'] ? 72 : 28) + ($state['wiping_suspected'] || $state['malware_suspected'] ? 16 : 0),
+                'rationale' => 'Validates app behavior, native code, wiping claims, permissions, and anti-analysis logic.',
+            ],
+        ];
+
+        foreach ($paths as &$path) {
+            $path['score'] = max(0, min(100, (int) $path['score']));
+            $path['feasibility'] = $this->methodRole((int) $path['score']);
+        }
+        unset($path);
+
+        usort($paths, static fn (array $left, array $right): int => $right['score'] <=> $left['score']);
+
+        return $paths;
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @param array<int, array<string, mixed>> $ranked
+     * @return array<int, string>
+     */
+    private function acquisitionBlockers(array $state, array $ranked): array
+    {
+        $blockers = [];
+        if ($state['lock_state'] === 'locked-before-first-unlock' && $state['fbe_enabled']) {
+            $blockers[] = 'Before-first-unlock state with file-based encryption can block app-private data and credential-protected storage.';
+        }
+        if (!$state['usb_debugging'] && $state['lock_state'] !== 'unlocked') {
+            $blockers[] = 'USB debugging is unavailable while locked, reducing logical acquisition options.';
+        }
+        if ($state['android_version'] >= 10 && !$state['root_possible']) {
+            $blockers[] = 'Modern Android scoped storage and app sandboxing reduce file-system visibility without elevated access.';
+        }
+        if ($state['work_profile']) {
+            $blockers[] = 'Managed profile data may require separate authority, profile unlock state, and MDM-aware handling.';
+        }
+        if (!$state['cloud_authority']) {
+            $blockers[] = 'Cloud evidence cannot be acquired until authority, account access, and MFA handling are resolved.';
+        }
+        if ($blockers === []) {
+            $blockers[] = 'No critical acquisition blocker was identified; preserve limitations and tool constraints in the case file.';
+        }
+
+        return $blockers;
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @param array<int, array<string, mixed>> $ranked
+     * @return array<int, string>
+     */
+    private function firstHourPlan(array $state, array $ranked): array
+    {
+        $lead = $ranked[0]['name'] ?? 'highest feasible path';
+        $plan = [
+            'Photograph device state, identifiers, lock screen, cables, cards, and visible notifications.',
+            'Prevent remote alteration by controlling radios and documenting network state.',
+            'Start with ' . $lead . ' while preserving a written method-selection rationale.',
+        ];
+        if ($state['malware_suspected']) {
+            $plan[] = 'Preserve volatile behavior context and avoid unnecessary interaction before runtime evidence decisions.';
+        }
+        if ($state['wiping_suspected']) {
+            $plan[] = 'Preserve media-store, thumbnails, filesystem metadata, app databases, and wiping-app residual traces before cleanup changes state.';
+        }
+        if ($state['cloud_authority']) {
+            $plan[] = 'Queue authorized cloud export early because sync state and remote retention can change independently of the handset.';
+        }
+
+        return $plan;
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @return array<int, string>
+     */
+    private function preservationNotes(array $state): array
+    {
+        $notes = [
+            'Record whether the device is before-first-unlock, after-first-unlock, or unlocked.',
+            'Document Android version, OEM build, security patch level if visible, and storage encryption assumptions.',
+            'Keep original extractions, parser exports, and transformed reports separated.',
+        ];
+        if ($state['external_storage']) {
+            $notes[] = 'Remove and image external storage only when authorized and after documenting physical state.';
+        }
+        if ($state['work_profile']) {
+            $notes[] = 'Treat personal and work profile evidence as separate scopes unless authority covers both.';
+        }
+
+        return $notes;
+    }
+
+    /**
+     * @param array<string, mixed> $state
+     * @return array<int, string>
+     */
+    private function acquisitionCautions(array $state): array
+    {
+        $cautions = [
+            'Do not equate tool success with evidence completeness.',
+            'Document negative findings with the exact acquisition scope and parser limitations.',
+        ];
+        if ($state['bootloader_unlocked']) {
+            $cautions[] = 'Bootloader changes can alter device state; document risk and authority before invasive methods.';
+        }
+        if ($state['root_possible']) {
+            $cautions[] = 'Root-based access may improve visibility but must be justified, repeatable, and disclosed.';
+        }
+
+        return $cautions;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function artifactFamilies(): array
+    {
+        return [
+            ['id' => 'sqlite-wal-shm', 'name' => 'SQLite, Room, WAL, and SHM', 'category' => 'Application data', 'base_score' => 78, 'boosts' => ['wiping_suspected' => 8, 'e2ee_apps_present' => 8], 'why_it_matters' => 'Recent, deleted, and uncheckpointed records may exist outside the main database file.', 'collection_notes' => 'Preserve db, wal, shm, journal, and related app directories together.', 'parser_risks' => 'Parsers can miss WAL records or transform timestamps.'],
+            ['id' => 'shared-preferences', 'name' => 'Shared Preferences and App Config', 'category' => 'Application data', 'base_score' => 58, 'boosts' => ['malware_suspected' => 10, 'wiping_suspected' => 8], 'why_it_matters' => 'Preferences expose feature flags, last-run state, wiping options, tokens, and user settings.', 'collection_notes' => 'Collect XML, JSON, protobuf, and backup copies.', 'parser_risks' => 'App-specific keys require manual interpretation.'],
+            ['id' => 'leveldb-webview', 'name' => 'LevelDB, WebView, and Chromium Storage', 'category' => 'Browser and WebView', 'base_score' => 62, 'boosts' => ['browser_relevant' => 24, 'malware_suspected' => 8], 'why_it_matters' => 'WebViews and browsers store sessions, local storage, IndexedDB, cache, and script artifacts.', 'collection_notes' => 'Collect profile folders, cache, cookies, local storage, and IndexedDB directories.', 'parser_risks' => 'Partial cache and LevelDB records need raw review.'],
+            ['id' => 'notifications-usage', 'name' => 'Notifications and Usage State', 'category' => 'Volatile context', 'base_score' => 56, 'boosts' => ['e2ee_apps_present' => 18, 'locked_device' => 12], 'why_it_matters' => 'Notifications can expose message previews, app activity, and interaction timing.', 'collection_notes' => 'Capture visible notifications, notification databases when available, and usage stats.', 'parser_risks' => 'Notification retention is short and device-specific.'],
+            ['id' => 'media-thumbnails-exif', 'name' => 'MediaStore, Thumbnails, and EXIF', 'category' => 'Media', 'base_score' => 60, 'boosts' => ['media_relevant' => 20, 'wiping_suspected' => 18, 'location_relevant' => 10], 'why_it_matters' => 'Thumbnails and MediaStore records can survive deletion or wiping attempts.', 'collection_notes' => 'Collect DCIM, Pictures, thumbnails, media provider databases, and cache folders.', 'parser_risks' => 'Timezone and generated-thumbnail timestamps can mislead timelines.'],
+            ['id' => 'downloads-documents', 'name' => 'Downloads and Document Providers', 'category' => 'File activity', 'base_score' => 54, 'boosts' => ['external_storage' => 22, 'wiping_suspected' => 8], 'why_it_matters' => 'DocumentProvider and downloads can reveal imports, exports, attachments, and user file movement.', 'collection_notes' => 'Collect Downloads, DocumentsUI recents, SAF/provider records, and removable media paths.', 'parser_risks' => 'Provider abstraction may hide physical paths.'],
+            ['id' => 'keystore-tokens', 'name' => 'Accounts, Tokens, and Keystore Context', 'category' => 'Identity and cloud', 'base_score' => 66, 'boosts' => ['cloud_relevant' => 18, 'e2ee_apps_present' => 8], 'why_it_matters' => 'Account state and token-bearing artifacts inform cloud acquisition and app access interpretation.', 'collection_notes' => 'Document account list, sync state, backups, and app-specific token stores where lawful.', 'parser_risks' => 'Secrets may be inaccessible or encrypted; avoid overclaiming.'],
+            ['id' => 'cloud-sync-backups', 'name' => 'Cloud Sync and Backup Records', 'category' => 'Cloud', 'base_score' => 60, 'boosts' => ['cloud_relevant' => 28, 'locked_device' => 10], 'why_it_matters' => 'Cloud records can be the strongest evidence when local device access is constrained.', 'collection_notes' => 'Preserve authority, export source, timestamps, account identifiers, and MFA handling.', 'parser_risks' => 'Provider export semantics and remote retention vary.'],
+            ['id' => 'e2ee-apps', 'name' => 'E2EE App Databases, Backups, and Attachments', 'category' => 'Communication', 'base_score' => 64, 'boosts' => ['e2ee_apps_present' => 28, 'locked_device' => 8], 'why_it_matters' => 'Message content may depend on app state, linked devices, local keys, backups, and notifications.', 'collection_notes' => 'Preserve databases, attachments, backups, notifications, and app state before interaction.', 'parser_risks' => 'Content may be unavailable even when metadata exists.'],
+            ['id' => 'package-permissions', 'name' => 'Package, Permission, and Installer Records', 'category' => 'App inventory', 'base_score' => 70, 'boosts' => ['malware_suspected' => 16], 'why_it_matters' => 'Install sources, permissions, signing, and package state support malware and wiping-app analysis.', 'collection_notes' => 'Collect package manager state, APKs, signatures, install times, and permissions.', 'parser_risks' => 'Sideloaded and staged apps require careful source attribution.'],
+            ['id' => 'native-code-runtime', 'name' => 'Native Libraries, DEX/OAT, and Runtime Traces', 'category' => 'Malware and stealth', 'base_score' => 50, 'boosts' => ['malware_suspected' => 30], 'why_it_matters' => 'Native libraries and optimized code can hold exploitability and anti-analysis evidence.', 'collection_notes' => 'Collect APK, split APKs, native libs, oat/vdex where available, logs, and runtime traces.', 'parser_risks' => 'Packed or obfuscated code needs static and dynamic validation.'],
+            ['id' => 'wiping-residuals', 'name' => 'Wiping Residual Artifacts', 'category' => 'Anti-forensics', 'base_score' => 48, 'boosts' => ['wiping_suspected' => 38], 'why_it_matters' => 'Execution traces and metadata may survive even when content is overwritten.', 'collection_notes' => 'Collect app databases, preferences, OS execution artifacts, media traces, logs, and before/after manifests.', 'parser_risks' => 'Findings must distinguish content, metadata, and execution traces.'],
+            ['id' => 'managed-profile', 'name' => 'Managed Profile and MDM Artifacts', 'category' => 'Enterprise', 'base_score' => 42, 'boosts' => ['work_profile' => 34], 'why_it_matters' => 'Work profiles split evidence scope and access paths from personal profile data.', 'collection_notes' => 'Document profile owner, authority, container state, and export limitations.', 'parser_risks' => 'Tools may report personal profile completeness while missing managed profile evidence.'],
+        ];
+    }
+
+    /**
+     * @param array<string, bool> $signals
+     * @return array<int, string>
+     */
+    private function artifactQuickWins(array $signals): array
+    {
+        $items = [
+            'Preserve databases with WAL and SHM companions before parser exports.',
+            'Record app package names, versions, signatures, install source, and permissions.',
+        ];
+        if ($signals['wiping_suspected']) {
+            $items[] = 'Collect thumbnails, media-store rows, wiping app preferences, and OS execution traces immediately.';
+        }
+        if ($signals['e2ee_apps_present']) {
+            $items[] = 'Capture notifications, attachments, backups, linked-device state, and local app databases together.';
+        }
+        if ($signals['cloud_relevant']) {
+            $items[] = 'Start authorized cloud exports early and preserve export metadata.';
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function sampleToolResults(): array
+    {
+        return [
+            ['tool' => 'Magnet AXIOM', 'artifact' => 'Messages database', 'count' => 128, 'hash' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'confidence' => 'High'],
+            ['tool' => 'Belkasoft X', 'artifact' => 'Messages database', 'count' => 126, 'hash' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'confidence' => 'Medium'],
+            ['tool' => 'Autopsy', 'artifact' => 'Media thumbnails', 'count' => 42, 'hash' => 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'confidence' => 'High'],
+            ['tool' => 'Manual SQLite Review', 'artifact' => 'Media thumbnails', 'count' => 42, 'hash' => 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'confidence' => 'High'],
+            ['tool' => 'JADX Review', 'artifact' => 'Wiping APK behavior', 'count' => 7, 'hash' => '', 'confidence' => 'Medium'],
+            ['tool' => 'Dynamic Trace', 'artifact' => 'Wiping APK behavior', 'count' => 9, 'hash' => '', 'confidence' => 'Medium'],
+        ];
+    }
+
+    /**
+     * @param mixed $results
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeToolResults(mixed $results): array
+    {
+        if (is_string($results)) {
+            $decoded = json_decode($results, true);
+            $results = is_array($decoded) ? $decoded : [];
+        }
+        if (!is_array($results) || $results === []) {
+            $results = $this->sampleToolResults();
+        }
+
+        $normalized = [];
+        foreach ($results as $result) {
+            if (!is_array($result)) {
+                continue;
+            }
+            $hash = strtolower(trim((string) ($result['hash'] ?? '')));
+            $normalized[] = [
+                'tool' => $this->cleanText($result['tool'] ?? 'Unknown tool'),
+                'artifact' => $this->cleanText($result['artifact'] ?? 'Unknown artifact'),
+                'count' => max(0, (int) ($result['count'] ?? 0)),
+                'hash' => preg_match('/^[a-f0-9]{64}$/', $hash) ? $hash : '',
+                'confidence' => $this->confidenceValue($result['confidence'] ?? 50),
+            ];
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param array<int, int> $counts
+     * @param array<int, string> $hashes
+     */
+    private function discrepancyIssue(array $counts, array $hashes, int $confidence): string
+    {
+        $issues = [];
+        if (count($counts) > 1) {
+            $issues[] = 'count mismatch';
+        }
+        if (count($hashes) > 1) {
+            $issues[] = 'hash mismatch';
+        }
+        if ($confidence < 70) {
+            $issues[] = 'low confidence';
+        }
+
+        return implode(', ', $issues);
+    }
+
+    private function discrepancyValidationStep(string $artifact): string
+    {
+        $lower = strtolower($artifact);
+        if (str_contains($lower, 'message')) {
+            return 'Review raw SQLite tables, WAL records, attachments, and notification evidence.';
+        }
+        if (str_contains($lower, 'media') || str_contains($lower, 'thumbnail')) {
+            return 'Compare MediaStore rows, filesystem metadata, thumbnails, EXIF, and recovered previews.';
+        }
+        if (str_contains($lower, 'wiping') || str_contains($lower, 'apk')) {
+            return 'Pair static reverse engineering with dynamic file-write tracing and recoverability testing.';
+        }
+
+        return 'Validate with raw source files, a second parser, and documented examiner notes.';
+    }
+
+    private function readableKey(string $key): string
+    {
+        return ucwords(str_replace('_', ' ', $key));
     }
 
     /**

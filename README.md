@@ -7,11 +7,16 @@ The lab is designed for examiners, researchers, and cybersecurity teams who need
 ## Core Capabilities
 
 - Case readiness scoring across governance, acquisition, evidence integrity, malware, memory, anti-forensics, privacy, and reporting controls.
+- Expert audit console that maps Android forensic field pain points to concrete lab capabilities and upgrade coverage.
+- Acquisition feasibility planner for Android version, lock state, file-based encryption, USB debugging, bootloader state, root feasibility, work profiles, cloud authority, and first-hour preservation decisions.
+- Artifact triage matrix for SQLite/WAL/SHM, WebView, notifications, E2EE apps, cloud records, media metadata, wiping residuals, package state, native code, work profiles, and removable storage.
 - Command workbench that converts scenario signals into a mission profile, urgency tier, operational lanes, priority method stack, evidence constellation, and validation backlog.
 - Context-aware method comparison for manual inspection, logical acquisition, file-system acquisition, physical imaging, cloud acquisition, memory acquisition, emulator dynamic analysis, static APK review, and dynamic application review.
+- Tool discrepancy validator for comparing parser counts, hashes, confidence, and release-blocking disagreement before formal reporting.
 - Timeline fusion engine for mixed-source Android events, activity clustering, anomaly detection, confidence scoring, anchors, and reconstruction steps.
 - File-wiping evaluation workflow based on declared claims, implementation evidence, standards alignment, recoverability, execution traces, app artifacts, OS artifacts, and timeline consistency.
 - Merkle-style SHA-256 evidence ledger for deterministic manifest integrity checkpoints.
+- Report readiness pack for authority, scope, chain of custody, hashes, tool versions, validation matrix, timeline anchors, limitations, privacy minimization, peer review, and reproducible appendices.
 - Research-source catalog with explicit alignment from Android forensic literature, stealth-attack detection work, method comparison research, file-wiping evaluation, and practical lab operations.
 - MySQL schema for research sources, methods, evidence features, tool profiles, controls, case assessments, workbench runs, timeline fusions, wiping evaluations, custody events, ledger runs, and audit events.
 
@@ -28,8 +33,13 @@ This project is informed by the following works:
 ## Application Routes
 
 - `/` - dashboard and workflow overview
+- `/audit` - expert field-pain-point audit
 - `/casework` - forensic readiness assessment
+- `/acquisition` - Android acquisition feasibility planner
+- `/artifacts` - artifact triage matrix
 - `/workbench` - scenario command workbench
+- `/validation` - parser and tool discrepancy validator
+- `/report-readiness` - defensible report release checklist
 - `/methods` - acquisition and analysis method comparison
 - `/wiping` - Android file-wiping evidence evaluation
 - `/timeline` - timeline fusion and reconstruction
@@ -41,8 +51,13 @@ This project is informed by the following works:
 
 ```http
 GET /api/summary
+GET /api/expert-audit
 POST /api/assess
+POST /api/acquisition-readiness
+POST /api/artifact-triage
 POST /api/command-workbench
+POST /api/tool-validation
+POST /api/report-readiness
 POST /api/method-compare
 POST /api/timeline-fusion
 POST /api/wiping-evaluation
@@ -90,6 +105,42 @@ Example command workbench request:
 }
 ```
 
+Example acquisition readiness request:
+
+```json
+{
+  "android_version": "14",
+  "lock_state": "locked-before-first-unlock",
+  "fbe_enabled": true,
+  "usb_debugging": false,
+  "cloud_authority": true,
+  "wiping_suspected": true
+}
+```
+
+Example tool validation request:
+
+```json
+{
+  "results": [
+    {
+      "tool": "Forensic Suite A",
+      "artifact": "Messages database",
+      "count": 128,
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "confidence": "High"
+    },
+    {
+      "tool": "Manual SQLite Review",
+      "artifact": "Messages database",
+      "count": 126,
+      "hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "confidence": "Medium"
+    }
+  ]
+}
+```
+
 ## Local Run
 
 With PHP installed:
@@ -117,11 +168,12 @@ php bin/lint.php
 php bin/test.php
 ```
 
-The test suite validates catalog integrity, command workbench behavior, timeline fusion, scoring behavior, method ranking, file-wiping classification, deterministic hash-ledger behavior, database migrations, seed data, and public-facing text hygiene.
+The test suite validates catalog integrity, expert audit coverage, acquisition feasibility, artifact triage, tool discrepancy validation, report readiness, command workbench behavior, timeline fusion, scoring behavior, method ranking, file-wiping classification, deterministic hash-ledger behavior, database migrations, seed data, and public-facing text hygiene.
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Expert Audit](docs/expert-audit.md)
 - [Research Alignment](docs/research-alignment.md)
 - [Security and Privacy](docs/security-and-privacy.md)
 - [Database Model](docs/database.md)

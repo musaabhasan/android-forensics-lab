@@ -28,8 +28,13 @@ final class View
   <header class="topbar">
     <a class="brand" href="/">Android Forensics Lab</a>
     <nav>
+      <a href="/audit">Audit</a>
       <a href="/casework">Casework</a>
+      <a href="/acquisition">Acquisition</a>
+      <a href="/artifacts">Artifacts</a>
       <a href="/workbench">Workbench</a>
+      <a href="/validation">Validation</a>
+      <a href="/report-readiness">Report</a>
       <a href="/methods">Methods</a>
       <a href="/wiping">Wiping</a>
       <a href="/timeline">Timeline</a>
