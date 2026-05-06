@@ -1,0 +1,37 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8098:80"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "false"
+      DB_DSN: mysql:host=db;port=3306;dbname=android_forensics_lab;charset=utf8mb4
+      DB_USER: forensics_lab
+      DB_PASS: forensics_lab_password
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: android_forensics_lab
+      MYSQL_USER: forensics_lab
+      MYSQL_PASSWORD: forensics_lab_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3318:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./database/migrations/001_create_core_tables.sql:/docker-entrypoint-initdb.d/001_create_core_tables.sql:ro
+      - ./database/seeders/001_seed_research_data.sql:/docker-entrypoint-initdb.d/002_seed_research_data.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:

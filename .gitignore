@@ -1,0 +1,11 @@
+/.env
+/vendor/
+/node_modules/
+/storage/
+/.phpunit.cache/
+/.idea/
+/.vscode/
+*.log
+*.sqlite
+*.db
+

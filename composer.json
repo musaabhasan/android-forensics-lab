@@ -1,0 +1,22 @@
+{
+  "name": "musaabhasan/android-forensics-lab",
+  "description": "Advanced Android digital forensics lab platform for acquisition planning, anti-forensics evaluation, evidence integrity, and research-aligned casework.",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": "^8.1",
+    "ext-pdo": "*",
+    "ext-json": "*",
+    "ext-hash": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "AndroidForensicsLab\\": "src/"
+    }
+  },
+  "scripts": {
+    "lint": "php bin/lint.php",
+    "test": "php bin/test.php"
+  }
+}
+
