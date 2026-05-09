@@ -17,6 +17,7 @@ The lab is designed for examiners, researchers, and cybersecurity teams who need
 - Timeline fusion engine for mixed-source Android events, activity clustering, anomaly detection, confidence scoring, anchors, and reconstruction steps.
 - Cloud backup correlation workflow for separating local artifacts, account/provider records, device binding, timestamp confidence, and privacy minimization.
 - Android location evidence confidence workflow for GPS, Wi-Fi, cell, EXIF, app, cloud, BLE, and MDM artifacts with precision, timestamp, spoofing, corroboration, and minimization checks.
+- Android app permission timeline workflow for reconstructing runtime grants, revocations, special access, app upgrades, MDM policy effects, and suspicious permission changes.
 - Work profile separation workflow for enterprise Android cases involving managed-profile boundaries, MDM evidence, app containers, account scope, and personal-data minimization.
 - File-wiping evaluation workflow based on declared claims, implementation evidence, standards alignment, recoverability, execution traces, app artifacts, OS artifacts, and timeline consistency.
 - Merkle-style SHA-256 evidence ledger for deterministic manifest integrity checkpoints.
@@ -184,6 +185,7 @@ The test suite validates catalog integrity, expert audit coverage, acquisition f
 - [Artifact Source Confidence Matrix](docs/artifact-source-confidence-matrix.md)
 - [Android Cloud Backup Correlation Workflow](docs/cloud-backup-correlation-workflow.md)
 - [Android Location Evidence Confidence Workflow](docs/location-evidence-confidence-workflow.md)
+- [Android App Permission Timeline Workflow](docs/app-permission-timeline-workflow.md)
 - [Android Work Profile Separation Workflow](docs/work-profile-separation-workflow.md)
 - [Database Model](docs/database.md)
 - [Testing](docs/testing.md)
