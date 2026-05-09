@@ -13,6 +13,7 @@ The lab is designed for examiners, researchers, and cybersecurity teams who need
 - Command workbench that converts scenario signals into a mission profile, urgency tier, operational lanes, priority method stack, evidence constellation, and validation backlog.
 - Context-aware method comparison for manual inspection, logical acquisition, file-system acquisition, physical imaging, cloud acquisition, memory acquisition, emulator dynamic analysis, static APK review, and dynamic application review.
 - Tool discrepancy validator for comparing parser counts, hashes, confidence, and release-blocking disagreement before formal reporting.
+- Artifact source confidence matrix for scoring provenance, integrity, parser reliability, timestamps, completeness, corroboration, anti-forensics exposure, and privacy minimization.
 - Timeline fusion engine for mixed-source Android events, activity clustering, anomaly detection, confidence scoring, anchors, and reconstruction steps.
 - File-wiping evaluation workflow based on declared claims, implementation evidence, standards alignment, recoverability, execution traces, app artifacts, OS artifacts, and timeline consistency.
 - Merkle-style SHA-256 evidence ledger for deterministic manifest integrity checkpoints.
@@ -177,6 +178,7 @@ The test suite validates catalog integrity, expert audit coverage, acquisition f
 - [Research Alignment](docs/research-alignment.md)
 - [Security and Privacy](docs/security-and-privacy.md)
 - [Evidence Integrity and Chain of Custody](docs/evidence-integrity-chain-of-custody.md)
+- [Artifact Source Confidence Matrix](docs/artifact-source-confidence-matrix.md)
 - [Database Model](docs/database.md)
 - [Testing](docs/testing.md)
 - [Extension Guide](docs/extension-guide.md)
