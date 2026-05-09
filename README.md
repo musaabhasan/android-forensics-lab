@@ -176,6 +176,7 @@ The test suite validates catalog integrity, expert audit coverage, acquisition f
 - [Expert Audit](docs/expert-audit.md)
 - [Research Alignment](docs/research-alignment.md)
 - [Security and Privacy](docs/security-and-privacy.md)
+- [Evidence Integrity and Chain of Custody](docs/evidence-integrity-chain-of-custody.md)
 - [Database Model](docs/database.md)
 - [Testing](docs/testing.md)
 - [Extension Guide](docs/extension-guide.md)
