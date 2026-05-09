@@ -16,6 +16,7 @@ The lab is designed for examiners, researchers, and cybersecurity teams who need
 - Artifact source confidence matrix for scoring provenance, integrity, parser reliability, timestamps, completeness, corroboration, anti-forensics exposure, and privacy minimization.
 - Timeline fusion engine for mixed-source Android events, activity clustering, anomaly detection, confidence scoring, anchors, and reconstruction steps.
 - Cloud backup correlation workflow for separating local artifacts, account/provider records, device binding, timestamp confidence, and privacy minimization.
+- Work profile separation workflow for enterprise Android cases involving managed-profile boundaries, MDM evidence, app containers, account scope, and personal-data minimization.
 - File-wiping evaluation workflow based on declared claims, implementation evidence, standards alignment, recoverability, execution traces, app artifacts, OS artifacts, and timeline consistency.
 - Merkle-style SHA-256 evidence ledger for deterministic manifest integrity checkpoints.
 - Report readiness pack for authority, scope, chain of custody, hashes, tool versions, validation matrix, timeline anchors, limitations, privacy minimization, peer review, and reproducible appendices.
@@ -181,6 +182,7 @@ The test suite validates catalog integrity, expert audit coverage, acquisition f
 - [Evidence Integrity and Chain of Custody](docs/evidence-integrity-chain-of-custody.md)
 - [Artifact Source Confidence Matrix](docs/artifact-source-confidence-matrix.md)
 - [Android Cloud Backup Correlation Workflow](docs/cloud-backup-correlation-workflow.md)
+- [Android Work Profile Separation Workflow](docs/work-profile-separation-workflow.md)
 - [Database Model](docs/database.md)
 - [Testing](docs/testing.md)
 - [Extension Guide](docs/extension-guide.md)
