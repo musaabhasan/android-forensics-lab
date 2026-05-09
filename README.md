@@ -19,6 +19,7 @@ The lab is designed for examiners, researchers, and cybersecurity teams who need
 - Android location evidence confidence workflow for GPS, Wi-Fi, cell, EXIF, app, cloud, BLE, and MDM artifacts with precision, timestamp, spoofing, corroboration, and minimization checks.
 - Android app permission timeline workflow for reconstructing runtime grants, revocations, special access, app upgrades, MDM policy effects, and suspicious permission changes.
 - Android notification evidence triage workflow for notification timelines, listener access, deleted-message previews, sensitive content, user interaction limits, and privacy minimization.
+- Android WebView and browser artifact workflow for history, cookies, WebView stores, downloads, autofill, cache, embedded browsers, redirects, profile boundaries, and privacy minimization.
 - Work profile separation workflow for enterprise Android cases involving managed-profile boundaries, MDM evidence, app containers, account scope, and personal-data minimization.
 - File-wiping evaluation workflow based on declared claims, implementation evidence, standards alignment, recoverability, execution traces, app artifacts, OS artifacts, and timeline consistency.
 - Merkle-style SHA-256 evidence ledger for deterministic manifest integrity checkpoints.
@@ -188,6 +189,7 @@ The test suite validates catalog integrity, expert audit coverage, acquisition f
 - [Android Location Evidence Confidence Workflow](docs/location-evidence-confidence-workflow.md)
 - [Android App Permission Timeline Workflow](docs/app-permission-timeline-workflow.md)
 - [Android Notification Evidence Triage Workflow](docs/notification-evidence-triage-workflow.md)
+- [Android WebView And Browser Artifact Workflow](docs/webview-browser-artifact-workflow.md)
 - [Android Work Profile Separation Workflow](docs/work-profile-separation-workflow.md)
 - [Database Model](docs/database.md)
 - [Testing](docs/testing.md)
